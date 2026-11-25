@@ -6,9 +6,6 @@
   --accent: #8fbab9;
   --line: #d7dddb;
   --surface: #fff;
-  --ok: #e0eee4;
-  --improve: #f5ebd0;
-  --add: #dcebea;
   font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background: #f3f5f4;
@@ -164,7 +161,7 @@ textarea { padding: 8px; border: 1px solid var(--line); border-radius: 8px; resi
 #track { position: absolute; inset: 20px 0 auto; height: 4px; background: var(--gray); border-radius: 4px; }
 #cursor { position: absolute; inset: 12px auto 12px 0; border-left: 2px solid var(--ink); pointer-events: none; }
 .marker { position: absolute; width: 44px; padding: 0; transform: translateX(-50%); background: none; border: 0; }
-.marker::before { content: ""; display: block; margin: auto; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; background: var(--marker); box-shadow: 0 0 0 1px var(--marker); }
+.marker::before { content: ""; display: block; margin: auto; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; background: #538b93; box-shadow: 0 0 0 1px var(--marker); }
 .notes { display: grid; gap: 6px; margin-top: 8px; }
 .note { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px; gap: 4px; align-items: center; padding-top: 6px; border-top: 1px solid var(--line); }
 .note button { font-size: .875rem; padding-inline: 8px; }
@@ -177,21 +174,14 @@ textarea { padding: 8px; border: 1px solid var(--line); border-radius: 8px; resi
 .categories button.selected, .criteria button.selected { background: var(--accent); border-color: #6a9b9a; }
 fieldset { border: 0; margin: 10px 0 0; padding: 0; min-width: 0; }
 legend { font-size: .9rem; font-weight: 600; margin-bottom: 5px; }
-.status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
-.status-grid input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.status-grid span { display: grid; place-items: center; text-align: center; font-size: .8rem; font-weight: 650; min-height: 44px; border: 2px solid transparent; border-radius: 8px; padding: 4px; cursor: pointer; }
-.status-grid input:checked + span { border-color: #4e5b58; }
-.status-grid input:focus-visible + span { outline: 3px solid #316c70; outline-offset: 2px; }
-.ok { background: var(--ok); }
-.improve { background: var(--improve); }
-.add { background: var(--add); }
 .time { font-variant-numeric: tabular-nums; font-weight: 650; background: #edf1ef; border-radius: 6px; padding: 4px 8px; }
-#save { flex: 1; }
-.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
-.summary article { padding: 12px; border-radius: 10px; min-width: 0; overflow-wrap: anywhere; }
-.summary ul { padding-left: 18px; }
-.summary button { font-size: .85rem; margin-block: 4px; }
-.priority { padding-block: 8px; border-top: 1px solid var(--line); }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 8px; margin-top: 8px; }
+.summary section { padding: 10px; border-radius: 10px; background: #f3f5f4; min-width: 0; }
+.summary h4 { margin: 0 0 6px; }
+.summary ul { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.summary button { width: 100%; font-size: .875rem; text-align: left; overflow-wrap: anywhere; }
+.teacher-report { margin-top: 12px; }
+.teacher-report textarea { display: block; width: 100%; color: var(--ink); }
 .feedback { color: #70412c; font-size: .875rem; overflow-wrap: anywhere; }
 .feedback:empty { margin: 0; }
 .feedback.muted { color: #315c5b; }
@@ -201,7 +191,7 @@ dialog { max-width: 540px; width: calc(100% - 32px); border: 0; border-radius: 1
 dialog::backdrop { background: #0008; }
 
 @media (max-width: 700px) {
-  .film-grid, .summary { grid-template-columns: minmax(0, 1fr); }
+  .film-grid { grid-template-columns: minmax(0, 1fr); }
   .capture { display: none; }
   .capture.is-active { display: block; }
   .header-inner { flex-wrap: wrap; gap: 5px; }

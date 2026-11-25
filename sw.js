@@ -1,4 +1,4 @@
-const VERSION = '0.2.6';
+const VERSION = '0.2.7';
 const CACHE = 'dans-eps-v' + VERSION;
 const ROOT = new URL('./', self.location.href);
 const INDEX = new URL('./index.html', ROOT).href;

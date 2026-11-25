@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.2.6"><script defer src="./app.js?v=0.2.6"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.2.7"><script defer src="./app.js?v=0.2.7"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -70,23 +70,7 @@
             <legend>Élément observé</legend>
             <div id="criteria" class="criteria"></div>
           </fieldset>
-          <fieldset>
-            <legend>Votre observation</legend>
-            <div class="status-grid">
-              <label><input type="radio" name="status" value="ok" checked><span class="ok">Maîtrisé</span></label>
-              <label><input type="radio" name="status" value="improve"><span class="improve">À améliorer</span></label>
-              <label><input type="radio" name="status" value="add"><span class="add">À intégrer</span></label>
-            </div>
-          </fieldset>
-          <details id="annotationOptions">
-            <summary>Conseil, commentaire ou passage</summary>
-            <p id="definition" class="muted"></p>
-            <label class="field">Commentaire<textarea id="comment" rows="2" maxlength="180" placeholder="Sans nom d’élève"></textarea></label>
-            <label class="check"><input type="checkbox" id="rangeMode"> Annoter un passage</label>
-            <div id="rangeFields" class="controls" hidden><button id="beginRange">Début</button><span id="rangeLabel">—</span><button id="endRange">Fin</button></div>
-          </details>
-          <p id="annotationError" class="feedback" role="status"></p>
-          <div class="controls"><button id="save" class="primary">Ajouter le repère</button><button id="cancelEdit">Annuler</button></div>
+          <div class="controls"><button id="cancelEdit">Annuler</button></div>
         </section>
         <div id="categories" class="categories" role="group" aria-label="Critères chorégraphiques"></div>
         <p id="annotationFeedback" class="feedback" role="status"></p>
@@ -94,19 +78,18 @@
     </section>
     <section id="transform" class="view" hidden>
       <div class="intro"><h2>Bilan de la chorégraphie</h2></div>
-      <div class="panel">
-        <div class="line"><h3>Priorités de travail</h3><span id="priorityCount" class="time" aria-live="polite"></span></div>
-        <p class="muted">Choisissez jusqu’à trois actions à essayer au prochain passage.</p>
-        <div id="priorities"></div>
-        <p id="priorityError" class="feedback" role="status"></p>
-      </div>
-      <details class="panel review"><summary>Relire les observations</summary>
+      <div class="panel" aria-labelledby="observedTitle">
+        <h3 id="observedTitle">Critères observés</h3>
         <div id="summary" class="summary"></div>
-        <h3>Critères à observer</h3><p id="unobserved"></p>
-      </details>
+      </div>
+      <div class="panel teacher-report" aria-labelledby="teacherTitle">
+        <h3 id="teacherTitle"><label for="teacherReport">Bilan de l’enseignant</label></h3>
+        <p id="dictationHelp" class="muted">Sur iPad, touche le champ puis le micro du clavier pour dicter ton bilan. Tu peux ensuite corriger le texte ou le saisir au clavier.</p>
+        <textarea id="teacherReport" rows="5" autocomplete="off" aria-describedby="dictationHelp" placeholder="Bilan de la chorégraphie, sans nom d’élève"></textarea>
+      </div>
     </section>
     <p id="message" class="feedback muted" role="status"></p>
   </main>
 </div>
 <footer><button id="privacyBtn" class="text-button">Confidentialité</button></footer>
-<dialog id="privacyDialog"><h2>Confidentialité</h2><p>Les vidéos et annotations sont conservées temporairement dans la mémoire de la page. Aucun compte, serveur de vidéo, stockage de séance ou outil de suivi n’est utilisé. Le navigateur et l’hébergeur peuvent traiter des informations techniques. Fermer ou recharger la page fait perdre la séance. L'effacement physique de la mémoire n'est pas garanti. La captation d'élèves doit être validée par l'établissement et son DPD.</p><button id="closePrivacy">Fermer</button></dialog></body></html>
+<dialog id="privacyDialog"><h2>Confidentialité</h2><p>Les vidéos, les repères et le bilan sont conservés temporairement dans la mémoire de la page. Aucun compte, serveur de vidéo, stockage de séance ou outil de suivi n’est utilisé. Le navigateur et l’hébergeur peuvent traiter des informations techniques. La dictée utilise le clavier de l’appareil et dépend de ses réglages. Fermer ou recharger la page fait perdre la séance. L'effacement physique de la mémoire n'est pas garanti. La captation d'élèves doit être validée par l'établissement et son DPD.</p><button id="closePrivacy">Fermer</button></dialog></body></html>
