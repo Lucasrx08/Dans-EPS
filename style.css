@@ -6,9 +6,9 @@
   --accent: #8fbab9;
   --line: #d7dddb;
   --surface: #fff;
-  font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 16px/1.42 "Avenir Next", "Segoe UI", system-ui, sans-serif;
   color: var(--ink);
-  background: #f3f5f4;
+  background: #edf3f1;
 }
 
 * { box-sizing: border-box; }
@@ -210,4 +210,61 @@ dialog::backdrop { background: #0008; }
   nav button { font-size: .85rem; }
 
   .head-actions button { font-size: .8rem; padding-inline: 6px; }
+}
+
+:root { --ink: #172e30; --accent: #8fbab9; --stage: #102326; }
+.app-header { background: var(--stage); color: #fff; border-color: #30484a; }
+.brand h1, h2, #editorTitle {
+  font-family: "Avenir Next Condensed", "Arial Narrow", "Avenir Next", system-ui, sans-serif;
+  font-weight: 900;
+  letter-spacing: -.035em;
+}
+.brand span { color: #aee5da; }
+.head-actions .quiet { color: #fff; border-color: #637b7d; }
+nav { background: #233d40; }
+nav button { color: #f1f7f5; }
+nav button.active { color: #122c2c; background: #aee5da; }
+h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
+.playback { background: #14292deF; }
+.playback #play { background: #aee5da; border-color: transparent; }
+.analysis-dock .categories button {
+  border: 0;
+  background: var(--category-color, #b4e3da);
+  color: #172e30;
+  font-weight: 800;
+  border-radius: 12px;
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.categories button:nth-child(3n + 2) { --category-color: #d5dafa; }
+.categories button:nth-child(3n) { --category-color: #f9e0a6; }
+.analysis-dock .categories button.selected { box-shadow: inset 0 0 0 3px #203d40; }
+.analysis-dock .categories button:active { transform: scale(.97); }
+#tools {
+  border: 0;
+  border-top: 4px solid #8fbab9;
+  background: #f7fffc;
+  box-shadow: 0 8px 25px #10232640;
+  animation: reveal-observation .22s ease-out;
+}
+#editorTitle { font-size: clamp(1.25rem, 3vw, 1.85rem); }
+#observationPrompt { margin: 3px 0 0; }
+.review-controls { margin-top: 6px; }
+#replayStatus { color: #365958; font-size: .85rem; font-weight: 650; }
+#observationChoices:not([hidden]) { animation: reveal-observation .18s ease-out; }
+#annotationFeedback:not(:empty) {
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #153638;
+  animation: reveal-observation .2s ease-out;
+}
+@keyframes reveal-observation {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tools, #observationChoices:not([hidden]), #annotationFeedback:not(:empty) { animation: none; }
+  .analysis-dock .categories button { transition: none; }
+  .analysis-dock .categories button:active { transform: none; }
 }

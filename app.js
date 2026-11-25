@@ -10,6 +10,17 @@ const data=[
  {name:'Corps / énergie',short:'Corps',items:[['Amplitude','Agrandissez la trajectoire des gestes.'],['Dissociation','Mobilisez différentes parties du corps.'],['Contraste d’énergie','Alternez un mouvement fluide et un mouvement explosif.'],['Intention artistique','Rendez l’émotion lisible dans les gestes.']]},
  {name:'Structure / relations',short:'Structure',items:[['Début / fin','Rendez le début et la fin clairement perceptibles.'],['Transition','Reliez deux phrases sans rupture involontaire.'],['Relation entre danseurs','Créez une interaction intentionnelle.']]}
 ];
+const observationPrompts = [
+  'Suis le trajet des danseurs. Où vont-ils et à quelle hauteur évoluent-ils ?',
+  'Regarde le groupe dans son ensemble. Quelle forme dessinent les placements ?',
+  'Repère un geste qui interrompt la danse ou détourne l’attention.',
+  'Cherche la phrase imposée. Comment le groupe la reprend-il ?',
+  'Compare les vitesses et les arrêts. Qu’est-ce qui change dans le rythme ?',
+  'Compare le moment où chacun bouge. Comment les mouvements se répondent-ils ?',
+  'Regarde l’amplitude des gestes et les changements d’énergie.',
+  'Observe comment les danseurs relient les passages ou interagissent.'
+];
+let replay = null;
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
 const say=s=>$('message').textContent=s;
@@ -144,8 +155,65 @@ $('start').onclick=()=>{if(!stream)return;if(videoURL&&!confirm('Remplacer la vi
 $('stop').onclick=()=>{if(rec?.state==='recording'){rec.stop();$('stop').disabled=true;say('Préparation de la vidéo…')}};
 function seekTo(n){if(videoURL&&Number.isFinite(n)){try{player.currentTime=Math.max(0,Math.min(length()||n,n))}catch(_){say('Recherche indisponible sur ce format.')}}}
 function renderClock(){const d=length();$('now').textContent=time(player.currentTime);$('duration').textContent=time(d);$('seek').max=d||1;$('seek').value=player.currentTime||0;$('cursor').style.left=(d?Math.min(100,player.currentTime/d*100):0)+'%';}
-player.ontimeupdate=renderClock;player.ondurationchange=()=>{renderClock();renderNotes()};player.onloadedmetadata=()=>{renderClock();renderNotes()};player.onpause=()=>{$('play').textContent='▶ Lecture'};player.onplay=()=>{$('play').textContent='❚❚ Pause'};player.onerror=()=>{if(videoURL)say('Format vidéo non lisible sur ce navigateur. Essayez une autre vidéo.')};
-$('play').onclick=()=>player.paused?player.play().catch(()=>say('Lecture impossible pour ce format.')):player.pause();$('back').onclick=()=>seekTo(player.currentTime-5);$('forward').onclick=()=>seekTo(player.currentTime+5);$('seek').oninput=e=>seekTo(Number(e.target.value));$('speed').onchange=e=>{try{player.playbackRate=Number(e.target.value)}catch(_){say('Vitesse indisponible sur cet appareil.');e.target.value='1'}};
+player.ontimeupdate = () => {
+  renderClock();
+  if (replay && !player.seeking && player.currentTime >= replay.end) finishReplay(true);
+};
+player.onended = () => {
+  if (replay) finishReplay(true);
+};
+player.ondurationchange=()=>{renderClock();renderNotes()};player.onloadedmetadata=()=>{renderClock();renderNotes()};player.onpause=()=>{$('play').textContent='▶ Lecture'};player.onplay=()=>{$('play').textContent='❚❚ Pause'};player.onerror=()=>{finishReplay(false, 'Ralenti indisponible.');if(videoURL)say('Format vidéo non lisible sur ce navigateur. Essayez une autre vidéo.')};
+$('play').onclick = () => {
+  if (replay) {
+    finishReplay(false);
+    return;
+  }
+  if (player.paused) player.play().catch(() => say('Lecture impossible pour ce format.'));
+  else player.pause();
+};
+$('back').onclick = () => { finishReplay(false); seekTo(player.currentTime - 5); };
+$('forward').onclick = () => { finishReplay(false); seekTo(player.currentTime + 5); };
+$('seek').oninput = event => { finishReplay(false); seekTo(Number(event.target.value)); };
+$('speed').onchange = event => {
+  finishReplay(false);
+  try { player.playbackRate = Number(event.target.value); }
+  catch (_) { say('Vitesse indisponible sur cet appareil.'); }
+};
+
+$('replay').onclick = () => {
+  if (replay || $('tools').hidden) return;
+  const target = Math.max(mark, 1);
+  const end = Math.min(length() || target, target);
+  replay = { end, rate: player.playbackRate };
+  const currentReplay = replay;
+  $('replay').disabled = true;
+  $('replayStatus').textContent = 'Ralenti en cours…';
+  try {
+    player.playbackRate = 0.5;
+    seekTo(Math.max(0, end - 2));
+    player.play().catch(() => {
+      if (replay === currentReplay) finishReplay(false, 'Ralenti indisponible. Réessaie.');
+    });
+  } catch (_) {
+    finishReplay(false, 'Ralenti indisponible. Réessaie.');
+  }
+};
+
+function finishReplay(completed, message = '') {
+  if (!replay) return;
+  const { rate } = replay;
+  replay = null;
+  player.pause();
+  player.playbackRate = rate;
+  $('replay').disabled = false;
+  $('replayStatus').textContent = message;
+  if (completed) {
+    seekTo(mark);
+    $('observationChoices').hidden = false;
+    $('replayStatus').textContent = 'Choisis ce que tu as observé.';
+  }
+}
+
 function fillCategories() {
   const visible = Number($('level').value) === 0 ? 6 : data.length;
   const editorOpen = !$('tools').hidden;
@@ -156,6 +224,7 @@ function fillCategories() {
     const choice = button(item.short, () => {
       if (!videoURL) return;
       const currentTime = player.currentTime;
+      finishReplay(false);
       player.pause();
       if ($('tools').hidden) {
         resetEditor();
@@ -175,6 +244,10 @@ function fillCategories() {
 
 function selectCategory(index, selected = null) {
   category = index;
+  $('observationPrompt').textContent = observationPrompts[index];
+  $('observationChoices').hidden = selected === null;
+  $('replayStatus').textContent = '';
+  $('editorTitle').textContent = editing === null ? data[index].short : 'Modifier le repère';
   fillCategories();
   const choices = $('criteria');
   choices.replaceChildren();
@@ -201,7 +274,6 @@ function updateMark() {
 function resetEditor() {
   editing = null;
   mark = player.currentTime || 0;
-  $('editorTitle').textContent = 'Ajouter un repère';
   updateMark();
 }
 
@@ -212,6 +284,7 @@ function openEditor() {
 }
 
 function closeEditor(returnFocus = false) {
+  finishReplay(false);
   $('tools').hidden = true;
   resetEditor();
   fillCategories();
@@ -238,7 +311,8 @@ $('closeNotes').onclick = () => {
 };
 $('cancelEdit').onclick = () => closeEditor(true);
 function saveObservation(criterion) {
-  if (!videoURL || $('tools').hidden) return;
+  if (!videoURL || $('tools').hidden || $('observationChoices').hidden) return;
+  finishReplay(false);
   player.pause();
   const observation = {
     id: editing ?? (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
@@ -261,11 +335,10 @@ function edit(observation) {
   mark = observation.start;
   $('tools').hidden = false;
   selectCategory(observation.category, observation.criterion);
-  $('editorTitle').textContent = 'Modifier le repère';
   openEditor();
 }
 
-function label(a){return data[a.category].items[a.criterion][0]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>{player.pause();seekTo(a.start)},'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>{player.pause();seekTo(a.start)},'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
+function label(a){return data[a.category].items[a.criterion][0]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>{finishReplay(false);player.pause();seekTo(a.start)},'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>{finishReplay(false);player.pause();seekTo(a.start)},'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
 function renderSummary() {
   const summary = $('summary');
   summary.replaceChildren();

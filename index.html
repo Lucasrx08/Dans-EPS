@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.2.7"><script defer src="./app.js?v=0.2.7"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.0"><script defer src="./app.js?v=0.3.0"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -18,7 +18,7 @@
 <div class="shell">
   <main>
     <section id="film" class="view">
-      <div class="intro"><h2>Filmer la chorégraphie</h2><button id="resume" hidden>Reprendre l’analyse</button></div>
+      <div class="intro"><h2>À vous de danser.</h2><button id="resume" hidden>Reprendre l’analyse</button></div>
       <div class="film-grid">
         <div class="capture">
           <video id="camera" autoplay muted playsinline></video>
@@ -65,9 +65,14 @@
           <div id="notes" class="notes"></div>
         </section>
         <section id="tools" class="panel" aria-labelledby="editorTitle" hidden>
-          <div class="line"><h3 id="editorTitle" tabindex="-1">Ajouter un repère</h3><span id="markTime" class="time">00:00</span></div>
-          <fieldset>
-            <legend>Élément observé</legend>
+          <div class="line"><h3 id="editorTitle" tabindex="-1">Observe le passage</h3><span id="markTime" class="time">00:00</span></div>
+          <p id="observationPrompt"></p>
+          <div class="controls review-controls">
+            <button id="replay" class="primary" type="button">↺ Revoir à 0,5×</button>
+            <span id="replayStatus" role="status"></span>
+          </div>
+          <fieldset id="observationChoices" hidden>
+            <legend>Qu’as-tu repéré ?</legend>
             <div id="criteria" class="criteria"></div>
           </fieldset>
           <div class="controls"><button id="cancelEdit">Annuler</button></div>
