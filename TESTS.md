@@ -1,0 +1,3 @@
+# Recette de la V0.1
+
+À valider sur iPad physique : Safari et mode écran d'accueil, permission caméra, captation avec/sans son, 3 minutes maximum, ouverture MP4/MOV selon codecs, pause et ralentis, repères ponctuels et passages, modification/suppression, synthèse, portrait/paysage, fonctionnement hors connexion, effacement de séance et mise à jour sans désinstallation. Vérifier via inspection réseau qu’aucune vidéo n’est envoyée, et que seul le cache technique existe. Cette version ne comporte pas encore la comparaison de deux vidéos, les dessins sur vidéo ni les animations des formations. L'icône photographique est un premier extrait de la maquette, de faible résolution.
