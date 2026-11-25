@@ -1,11 +1,11 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const data = [
-  { short: 'TEMPS', items: ['Lent / rapide', 'Accélération / décélération', 'Immobilité', 'Rupture de rythme', 'Accord avec la musique'] },
-  { short: 'ESPACE', items: ['Directions', 'Trajectoires', 'Niveaux haut / moyen / bas', 'Occupation de la scène', 'Formations', 'Changement de formation'] },
+  { short: 'TEMPS', items: ['Lent / rapide', 'Accélération / décélération', 'Immobilité', 'Rupture de rythme', 'Accord avec la musique', 'Début identifiable', 'Refrain imposé avec variation de temps', 'Fin identifiable'] },
+  { short: 'ESPACE', items: ['Directions', 'Trajectoires', 'Niveaux haut / moyen / bas', 'Occupation de la scène', 'Formations', 'Changement de formation', 'Ligne', 'Colonne', 'Diagonale', 'Cercle', 'V', 'Quinconce', 'Déplacement collectif'] },
   { short: 'ÉNERGIE', items: ['Fluide', 'Saccadé', 'Léger', 'Lourd', 'Explosif', 'Contraste d’énergie'] },
-  { short: 'RELATION', items: ['Regards', 'Contact', 'Proximité / éloignement', 'Action / réaction', 'Porté'] },
-  { short: 'CORPS', items: ['Amplitude', 'Dissociation', 'Équilibre / déséquilibre', 'Appuis', 'Parties du corps mobilisées'] },
+  { short: 'RELATION', items: ['Regards', 'Contact', 'Proximité / éloignement', 'Action / réaction', 'Porté', 'Regard parasite'] },
+  { short: 'CORPS', items: ['Amplitude', 'Dissociation', 'Équilibre / déséquilibre', 'Appuis', 'Parties du corps mobilisées', 'Geste parasite'] },
   { short: 'PROCÉDÉ', items: ['Unisson', 'Canon', 'Répétition', 'Miroir', 'Accumulation', 'Alternance', 'Question-réponse'] }
 ];
 let selectionGesture = null;
@@ -13,16 +13,17 @@ let selectionArea = null;
 const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
+const formations = ['Ligne', 'Colonne', 'Diagonale', 'Cercle', 'V', 'Quinconce'];
 const commandRequirements = [
-  { label: 'Procédés de composition', target: 3 },
-  { label: 'Formations différentes', target: 3 },
-  { label: 'Déplacements collectifs', target: 2 },
-  { label: 'Début identifiable', target: 1 },
-  { label: 'Passages du refrain imposé avec variation de temps', target: 2 },
-  { label: 'Aucun regard parasite', target: 1 },
-  { label: 'Aucun geste parasite', target: 1 },
-  { label: '2 min de chorégraphie', target: 1, duration: true },
-  { label: 'Fin identifiable', target: 1 }
+  { label: 'Procédés de composition', target: 3, criteria: data[5].items },
+  { label: 'Formations différentes', target: 3, criteria: [...formations, 'Formations', 'Changement de formation'], countable: formations, distinct: true },
+  { label: 'Déplacements collectifs', target: 2, criteria: ['Déplacement collectif'] },
+  { label: 'Début identifiable', target: 1, criteria: ['Début identifiable'] },
+  { label: 'Passages du refrain imposé avec variation de temps', target: 2, criteria: ['Refrain imposé avec variation de temps'] },
+  { label: 'Aucun regard parasite', target: 1, criteria: ['Regard parasite'], manual: true },
+  { label: 'Aucun geste parasite', target: 1, criteria: ['Geste parasite'], manual: true },
+  { label: '2 min de chorégraphie', target: 1, manual: true, duration: true },
+  { label: 'Fin identifiable', target: 1, criteria: ['Fin identifiable'] }
 ];
 const commandValues = commandRequirements.map(() => 0);
 const say=s=>$('message').textContent=s;
@@ -389,19 +390,41 @@ function progressState(value, target) {
   return value === target ? 'complete' : 'partial';
 }
 
-function updateCommandGauge(card, index) {
-  const { target } = commandRequirements[index];
-  const value = commandValues[index];
-  const state = progressState(value, target);
-  card.dataset.state = state;
+function commandEvidence(requirement) {
+  return annotations.filter(observation => requirement.criteria?.includes(label(observation)))
+    .sort((first, second) => first.start - second.start);
+}
+
+function commandProgress(index, evidence = commandEvidence(commandRequirements[index])) {
+  const requirement = commandRequirements[index];
+  if (requirement.manual) return evidence.length ? 0 : commandValues[index];
+  const countable = evidence.filter(observation => !requirement.countable || requirement.countable.includes(label(observation)));
+  const counted = new Set(countable.map(observation => requirement.distinct ? label(observation) : label(observation) + ':' + observation.start));
+  return Math.min(requirement.target, counted.size);
+}
+
+function updateCommandGauge(card, index, evidence) {
+  const { target, manual } = commandRequirements[index];
+  const value = commandProgress(index, evidence);
+  card.dataset.state = progressState(value, target);
   card.querySelector('progress').value = value;
-  card.querySelector('output').textContent = target > 1 ? value + ' / ' + target : value ? 'Validé' : 'À valider';
+  card.querySelector('output').textContent = target > 1 ? value + ' / ' + target
+    : value ? 'Validé' : manual && !evidence.length ? 'À vérifier' : 'Manquant';
+}
+
+function observationLink(observation) {
+  return button(time(observation.start) + ' · ' + label(observation), () => {
+    show('analyze');
+    jumpToObservation(observation);
+  });
 }
 
 function renderCommand() {
   const checklist = $('commandChecklist');
   checklist.replaceChildren();
-  commandRequirements.forEach(({ label, target, duration }, index) => {
+  commandRequirements.forEach((requirement, index) => {
+    const { label, target, duration, manual } = requirement;
+    const evidence = commandEvidence(requirement);
     const card = document.createElement('fieldset');
     const legend = document.createElement('legend');
     legend.textContent = target > 1 ? target + ' × ' + label : label;
@@ -414,26 +437,31 @@ function renderCommand() {
     reading.append(progress, output);
     card.append(legend, reading);
 
-    const choices = document.createElement('div');
-    choices.className = 'command-choices';
-    const values = target === 1 ? [1] : Array.from({ length: target + 1 }, (_, count) => count);
-    for (const value of values) {
+    if (evidence.length) {
+      const links = document.createElement('div');
+      links.className = 'command-evidence';
+      links.append(...evidence.map(observationLink));
+      card.append(links);
+    }
+
+    if (manual && !evidence.length) {
+      const choices = document.createElement('div');
+      choices.className = 'command-choices';
       const choice = document.createElement('label');
       const input = document.createElement('input');
-      input.type = target === 1 ? 'checkbox' : 'radio';
-      input.name = 'command-' + index;
-      input.checked = commandValues[index] === value;
+      input.type = 'checkbox';
+      input.checked = Boolean(commandValues[index]);
       const text = document.createElement('span');
-      text.textContent = target === 1 ? 'Valider' : String(value);
+      text.textContent = 'Valider après vérification';
       input.onchange = () => {
-        commandValues[index] = input.checked ? value : 0;
-        updateCommandGauge(card, index);
+        commandValues[index] = Number(input.checked);
+        updateCommandGauge(card, index, evidence);
         renderReadiness();
       };
       choice.append(input, text);
       choices.append(choice);
+      card.append(choices);
     }
-    card.append(choices);
     if (duration) {
       const actual = document.createElement('small');
       actual.id = 'commandDuration';
@@ -441,8 +469,13 @@ function renderCommand() {
       card.append(actual);
     }
     checklist.append(card);
-    updateCommandGauge(card, index);
+    updateCommandGauge(card, index, evidence);
   });
+
+  const extra = annotations.filter(observation => !commandRequirements.some(requirement =>
+    requirement.criteria?.includes(label(observation))));
+  $('extraObservations').hidden = !extra.length;
+  $('extraObservationLinks').replaceChildren(...extra.map(observationLink));
 }
 
 $('reviewVideo').onclick = () => show('analyze');
@@ -458,8 +491,8 @@ function renderReadiness() {
 
   let percent;
   if (commandActive) {
-    const progress = commandValues.reduce((sum, value, index) =>
-      sum + value / commandRequirements[index].target, 0);
+    const progress = commandRequirements.reduce((sum, requirement, index) =>
+      sum + commandProgress(index) / requirement.target, 0);
     percent = Math.floor(progress * 100 / commandRequirements.length);
   } else {
     const positive = annotations.filter(item => item.assessment === 'positive').length;
@@ -479,7 +512,10 @@ function renderReadiness() {
 
 function renderSummary() {
   renderReadiness();
-  renderCommandDuration();
+  if (!$('commandPanel').hidden) {
+    renderCommand();
+    renderCommandDuration();
+  }
   const summary = $('summary');
   summary.replaceChildren();
   if ($('observedPanel').hidden) return;
@@ -501,10 +537,7 @@ function renderSummary() {
     const list = document.createElement('ul');
     for (const observation of observed) {
       const row = document.createElement('li');
-      row.append(button(time(observation.start) + ' · ' + label(observation), () => {
-        show('analyze');
-        jumpToObservation(observation);
-      }));
+      row.append(observationLink(observation));
       const assessment = document.createElement('select');
       assessment.setAttribute('aria-label', 'Classer ' + label(observation) + ' à ' + time(observation.start));
       for (const [value, text] of [['', 'À classer'], ['positive', 'Point positif'], ['improve', 'À améliorer']]) {

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.6"><script defer src="./app.js?v=0.3.6"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.7"><script defer src="./app.js?v=0.3.7"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -103,8 +103,12 @@
           <progress id="readinessProgress" aria-label="Préparation à l’évaluation" value="0" max="100"></progress>
           <p id="readinessCounts" class="readiness-counts"></p>
           <div id="commandPanel" hidden>
-            <p class="muted">Vérifie chaque exigence dans la vidéo, puis indique où en est ton groupe.</p>
+            <p class="muted">Les repères de la vidéo alimentent les jauges. Touche un repère pour revoir le passage.</p>
             <div id="commandChecklist" class="command-checklist"></div>
+            <details id="extraObservations" hidden>
+              <summary>Autres repères</summary>
+              <div id="extraObservationLinks" class="command-evidence"></div>
+            </details>
           </div>
         </div>
       </section>

@@ -338,3 +338,6 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .command-choices input:checked + span { outline: 2px solid var(--gauge); outline-offset: -2px; background: var(--gauge-track); }
 .command-choices input:focus-visible + span { outline: 2px solid #203d40; outline-offset: 1px; }
 .command-checklist small { display: block; margin-top: 4px; }
+
+.command-evidence { display: flex; flex-wrap: wrap; gap: 5px; }
+.command-evidence button { font-size: .85rem; text-align: left; overflow-wrap: anywhere; }
