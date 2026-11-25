@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.2"><script defer src="./app.js?v=0.3.2"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.3"><script defer src="./app.js?v=0.3.3"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -36,19 +36,33 @@
             <button id="import">Importer une vidéo</button>
             <input id="file" type="file" accept="video/*" hidden>
           </div>
-          <details id="captureSettings">
-            <summary>Réglages de la séance</summary>
-            <label class="field">Niveau<select id="level"><option value="0">6ème</option><option value="1" selected>3ème</option><option value="2">Lycée</option></select></label>
-            <label class="field">Compte à rebours<select id="countdown"><option value="0">Aucun</option><option value="3" selected>3 secondes</option><option value="5">5 secondes</option></select></label>
-            <label class="check"><input type="checkbox" id="audio"> Enregistrer le son</label>
-          </details>
+          <section class="capture-settings" aria-labelledby="settingsTitle">
+            <h3 id="settingsTitle">Réglages de la séance</h3>
+            <fieldset id="level">
+              <legend>Niveau</legend>
+              <div class="setting-choices">
+                <label><input type="radio" name="level" value="0"><span>6e</span></label>
+                <label><input type="radio" name="level" value="1" checked><span>3e</span></label>
+                <label><input type="radio" name="level" value="2"><span>Lycée</span></label>
+              </div>
+            </fieldset>
+            <fieldset id="countdown">
+              <legend>Compte à rebours</legend>
+              <div class="setting-choices">
+                <label><input type="radio" name="countdown" value="0"><span>Aucun</span></label>
+                <label><input type="radio" name="countdown" value="3" checked><span>3 s</span></label>
+                <label><input type="radio" name="countdown" value="5"><span>5 s</span></label>
+              </div>
+            </fieldset>
+            <label class="sound-setting"><span>Enregistrer le son</span><input id="audio" type="checkbox" role="switch"></label>
+          </section>
           <p class="muted session-note">Captation jusqu’à 3 min. Vidéo et repères conservés uniquement pendant la séance.</p>
         </div>
       </div>
     </section>
     <section id="analysisView" class="view" aria-label="Analyser la chorégraphie" hidden>
       <video id="player" playsinline preload="metadata"></video>
-      <div id="videoTarget" aria-hidden="true"></div>
+      <div id="videoTarget" aria-hidden="true"><div id="dragPreview" hidden></div></div>
       <div class="analysis-dock">
         <div class="playback">
           <div class="seek"><span id="now">00:00</span><input type="range" id="seek" min="0" max="1" value="0" step="0.05" aria-label="Position vidéo"><span id="duration">00:00</span></div>
@@ -70,7 +84,7 @@
           <button id="cancelEdit" type="button">Annuler</button>
         </section>
         <div id="selectionHint">
-          <span>Touche un danseur ou fais glisser ton doigt sur la vidéo.</span>
+          <span>Touche un danseur ou fais glisser ton doigt pour sélectionner une zone.</span>
           <button id="wholeScene" type="button">Toute la scène</button>
         </div>
         <div id="categories" hidden class="categories" role="group" aria-label="Critères chorégraphiques"></div>

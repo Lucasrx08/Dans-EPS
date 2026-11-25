@@ -285,3 +285,30 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .observed-panel { margin-top: 12px; }
 .summary li { display: grid; gap: 3px; margin-bottom: 5px; }
 .summary select { width: 100%; font-size: .85rem; }
+
+.capture-settings {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #e6f2ee;
+}
+.capture-settings h3 { font-weight: 850; }
+.setting-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.setting-choices label { position: relative; }
+.setting-choices input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.setting-choices span {
+  display: grid; place-items: center; min-height: 44px; padding: 4px;
+  background: #fff; border-radius: 9px; cursor: pointer; font-weight: 750;
+}
+.setting-choices input:checked + span { background: #203d40; color: #fff; }
+.setting-choices input:focus-visible + span { outline: 3px solid #316c70; outline-offset: 2px; }
+.setting-choices input:disabled + span { opacity: .55; cursor: default; }
+.sound-setting {
+  margin-top: 9px; min-height: 44px; display: flex; gap: 8px; align-items: center;
+  justify-content: space-between; font-weight: 700; cursor: pointer;
+}
+.sound-setting input { width: 24px; height: 24px; margin: 0; accent-color: #203d40; }
+#dragPreview {
+  position: absolute; pointer-events: none; border: 2px dashed #b8fff0;
+  background: #aee5da30; box-shadow: 0 0 0 1px #102326;
+}

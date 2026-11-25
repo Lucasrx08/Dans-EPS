@@ -8,7 +8,8 @@ const data = [
   { short: 'CORPS', items: ['Amplitude', 'Dissociation', 'Équilibre / déséquilibre', 'Appuis', 'Parties du corps mobilisées'] },
   { short: 'PROCÉDÉ', items: ['Unisson', 'Canon', 'Répétition', 'Miroir', 'Accumulation', 'Alternance', 'Question-réponse'] }
 ];
-let selectionPointer = null;
+let selectionGesture = null;
+let selectionArea = null;
 const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
@@ -92,7 +93,7 @@ function releaseCamera() {
   captureControls();
 }
 function clearVideo(){player.pause();player.removeAttribute('src');player.load();if(videoURL)URL.revokeObjectURL(videoURL);videoURL=null;knownDuration=0;annotations=[];$('teacherReport').value='';closeEditor();$('annotationFeedback').textContent='';controls();renderNotes();renderClock()}
-function resetSession(){recordGeneration++;if(rec&&rec.state!=='inactive'){try{rec.stop()}catch(_){}}rec=null;chunks=[];releaseCamera();clearVideo();$('file').value='';$('audio').checked=false;$('captureSettings').open=false;captureControls();$('filter').value='';show('film');say('Séance effacée.')}
+function resetSession(){recordGeneration++;if(rec&&rec.state!=='inactive'){try{rec.stop()}catch(_){}}rec=null;chunks=[];releaseCamera();clearVideo();$('file').value='';$('audio').checked=false;captureControls();$('filter').value='';show('film');say('Séance effacée.')}
 $('reset').onclick=()=>{if(confirm('Effacer la vidéo, les repères et le bilan de cette séance ?'))resetSession()};
 $('import').onclick = () => $('file').click();
 
@@ -140,7 +141,7 @@ $('closeCamera').onclick = () => {
 function loadVideo(blob,estimated=0){clearVideo();knownDuration=estimated;videoURL=URL.createObjectURL(blob);player.src=videoURL;player.load();controls();renderClock();show('analyze')}
 $('file').onchange=()=>{const f=$('file').files[0];if(!f)return;if(rec&&rec.state!=='inactive'||countTimer){say('Terminez la captation en cours.');$('file').value='';return}if(f.size>250*1024*1024){say('Vidéo trop volumineuse (250 Mo maximum).');$('file').value='';return}if(videoURL&&!confirm('Remplacer la vidéo ? Les repères et le bilan seront effacés.')){$('file').value='';return}releaseCamera();loadVideo(f);$('file').value=''};
 function beginRecording(){if(!stream)return;const g=++recordGeneration;const parts=[];try{const types=['video/mp4','video/webm;codecs=vp8','video/webm'];const type=types.find(t=>MediaRecorder.isTypeSupported?.(t));const options={videoBitsPerSecond:2200000};if(type)options.mimeType=type;const r=new MediaRecorder(stream,options);rec=r;chunks=parts;r.ondataavailable=e=>{if(g===recordGeneration&&e.data.size)parts.push(e.data)};r.onerror=()=>{if(g===recordGeneration){recordGeneration++;rec=null;chunks=[];releaseCamera();say('Erreur d’enregistrement. Réessayez.')}};r.onstop=()=>{if(g!==recordGeneration)return;const d=(Date.now()-started)/1000;const blob=new Blob(parts,{type:r.mimeType||parts[0]?.type||'video/mp4'});parts.length=0;chunks=[];rec=null;releaseCamera();if(blob.size)loadVideo(blob,d);else say('Aucune vidéo capturée. Réessayez.')};r.start(1000);started=Date.now();$('recordBadge').hidden=false;$('recordTime').textContent='00:00';captureControls();timer=setInterval(()=>{const d=(Date.now()-started)/1000;$('recordTime').textContent=time(d);if(d>=180&&r.state==='recording')r.stop()},200);say('')}catch(e){rec=null;releaseCamera();say('Enregistrement non disponible : essayez une vidéo autorisée.')}}
-$('start').onclick=()=>{if(!stream)return;if(videoURL&&!confirm('Remplacer la vidéo ? Les repères et le bilan seront effacés.'))return;let n=Number($('countdown').value);$('start').disabled=true;if(!n){beginRecording();return}$('recordBadge').hidden=false;$('recordTime').textContent=n;countTimer=setInterval(()=>{n--;if(n<=0){clearInterval(countTimer);countTimer=null;beginRecording()}else $('recordTime').textContent=n},1000);captureControls()};
+$('start').onclick=()=>{if(!stream)return;if(videoURL&&!confirm('Remplacer la vidéo ? Les repères et le bilan seront effacés.'))return;let n=Number($('countdown').querySelector(':checked').value);$('start').disabled=true;if(!n){beginRecording();return}$('recordBadge').hidden=false;$('recordTime').textContent=n;countTimer=setInterval(()=>{n--;if(n<=0){clearInterval(countTimer);countTimer=null;beginRecording()}else $('recordTime').textContent=n},1000);captureControls()};
 $('stop').onclick=()=>{if(rec?.state==='recording'){rec.stop();$('stop').disabled=true;say('Préparation de la vidéo…')}};
 function seekTo(n){if(videoURL&&Number.isFinite(n)){try{player.currentTime=Math.max(0,Math.min(length()||n,n))}catch(_){say('Recherche indisponible sur ce format.')}}}
 function renderClock(){const d=length();$('now').textContent=time(player.currentTime);$('duration').textContent=time(d);$('seek').max=d||1;$('seek').value=player.currentTime||0;$('cursor').style.left=(d?Math.min(100,player.currentTime/d*100):0)+'%';}
@@ -167,40 +168,87 @@ $('speed').onchange = event => {
   catch (_) { say('Vitesse indisponible sur cet appareil.'); }
 };
 
-function selectScene() {
+function selectScene(area = null) {
   if (!videoURL) return;
   player.pause();
   closeEditor();
   setNotesOpen(false);
+  selectionArea = area;
   $('annotationFeedback').textContent = '';
   $('categories').hidden = false;
   $('selectionHint').hidden = true;
 }
 
+function videoFrame() {
+  const bounds = target.getBoundingClientRect();
+  if (!bounds.width || !bounds.height || !player.videoWidth || !player.videoHeight) return null;
+  const scale = Math.min(bounds.width / player.videoWidth, bounds.height / player.videoHeight);
+  const width = player.videoWidth * scale;
+  const height = player.videoHeight * scale;
+  const left = (bounds.width - width) / 2;
+  const top = (bounds.height - height) / 2;
+  return { x: bounds.left + left, y: bounds.top + top, left, top, width, height };
+}
+
+function gestureArea(event, gesture) {
+  const { frame, start } = gesture;
+  const x = Math.max(0, Math.min(1, (event.clientX - frame.x) / frame.width));
+  const y = Math.max(0, Math.min(1, (event.clientY - frame.y) / frame.height));
+  const width = Math.abs(x - start.x);
+  const height = Math.abs(y - start.y);
+  if (width * frame.width < 8 || height * frame.height < 8) {
+    return { ...start, width: 0, height: 0 };
+  }
+  return { x: Math.min(start.x, x), y: Math.min(start.y, y), width, height };
+}
+
+function clearGesture() {
+  selectionGesture = null;
+  $('dragPreview').hidden = true;
+}
+
 target.onpointerdown = event => {
   if (!videoURL || !event.isPrimary || event.button !== 0) return;
-  const bounds = target.getBoundingClientRect();
-  const scale = Math.min(bounds.width / player.videoWidth, bounds.height / player.videoHeight);
-  const horizontalInset = (bounds.width - player.videoWidth * scale) / 2;
-  const verticalInset = (bounds.height - player.videoHeight * scale) / 2;
-  if (!player.videoWidth || event.clientX < bounds.left + horizontalInset ||
-      event.clientX > bounds.right - horizontalInset || event.clientY < bounds.top + verticalInset ||
-      event.clientY > bounds.bottom - verticalInset) return;
+  const frame = videoFrame();
+  if (!frame) return;
+  const x = (event.clientX - frame.x) / frame.width;
+  const y = (event.clientY - frame.y) / frame.height;
+  if (x < 0 || x > 1 || y < 0 || y > 1) return;
   player.pause();
-  selectionPointer = event.pointerId;
+  selectionGesture = { id: event.pointerId, frame, start: { x, y } };
   target.setPointerCapture(event.pointerId);
 };
-target.onpointerup = event => {
-  if (selectionPointer === event.pointerId) selectScene();
+
+target.onpointermove = event => {
+  if (selectionGesture?.id !== event.pointerId) return;
+  const area = gestureArea(event, selectionGesture);
+  const preview = $('dragPreview');
+  preview.hidden = !area.width;
+  if (preview.hidden) return;
+  const { frame } = selectionGesture;
+  preview.style.left = frame.left + area.x * frame.width + 'px';
+  preview.style.top = frame.top + area.y * frame.height + 'px';
+  preview.style.width = area.width * frame.width + 'px';
+  preview.style.height = area.height * frame.height + 'px';
 };
-target.onlostpointercapture = () => { selectionPointer = null; };
+
+target.onpointerup = event => {
+  if (selectionGesture?.id !== event.pointerId) return;
+  selectScene(gestureArea(event, selectionGesture));
+};
+target.onlostpointercapture = event => {
+  if (selectionGesture?.id === event.pointerId) clearGesture();
+};
+target.onpointercancel = target.onlostpointercapture;
+window.addEventListener('resize', clearGesture);
+
 $('wholeScene').onclick = () => {
   selectScene();
   $('categories').firstElementChild?.focus({ preventScroll: true });
 };
 
 function fillCategories() {
-  const visible = Number($('level').value) === 0 ? 3 : data.length;
+  const visible = Number($('level').querySelector(':checked').value) === 0 ? 3 : data.length;
   const editorOpen = !$('tools').hidden;
   $('categories').replaceChildren();
   data.forEach((item, index) => {
@@ -252,7 +300,8 @@ function closeEditor(returnFocus = false) {
   $('tools').hidden = true;
   $('categories').hidden = true;
   $('selectionHint').hidden = false;
-  selectionPointer = null;
+  clearGesture();
+  selectionArea = null;
   editing = null;
   mark = player.currentTime || 0;
   fillCategories();
@@ -282,7 +331,8 @@ function saveObservation(criterion) {
     id: editing ?? (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
     category,
     criterion,
-    start: mark
+    start: mark,
+    area: selectionArea
   };
   if (editing === null) annotations.push(observation);
   else annotations = annotations.map(item => item.id === editing ? { ...item, ...observation } : item);
@@ -297,6 +347,7 @@ function edit(observation) {
   seekTo(observation.start);
   editing = observation.id;
   mark = observation.start;
+  selectionArea = observation.area ?? null;
   $('categories').hidden = false;
   $('selectionHint').hidden = true;
   $('tools').hidden = false;
