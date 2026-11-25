@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.2.3"><script defer src="./app.js?v=0.2.3"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.2.4"><script defer src="./app.js?v=0.2.4"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -28,14 +28,13 @@
           <div id="recordBadge" hidden><span id="recordTime">00:00</span></div>
         </div>
         <div class="panel capture-options">
-          <label class="check"><input type="checkbox" id="authorized"> La captation ou l’utilisation de cette vidéo a été validée par l’enseignant et l’établissement.</label>
           <div class="capture-actions">
-            <button id="enable" class="primary" disabled>Activer la caméra</button>
+            <button id="enable" class="primary">Activer la caméra</button>
             <button id="start" class="primary" hidden>Enregistrer</button>
             <button id="stop" class="primary danger" hidden>Terminer l’enregistrement</button>
             <button id="closeCamera" hidden>Fermer la caméra</button>
-            <button id="import" disabled>Importer une vidéo</button>
-            <input id="file" type="file" accept="video/*" disabled hidden>
+            <button id="import">Importer une vidéo</button>
+            <input id="file" type="file" accept="video/*" hidden>
           </div>
           <details id="captureSettings">
             <summary>Réglages de la séance</summary>
@@ -65,7 +64,10 @@
         <aside id="tools" class="panel" aria-labelledby="editorTitle">
           <div class="line"><h3 id="editorTitle">Ajouter un repère</h3><span id="markTime" class="time">00:00</span></div>
           <div id="categories" class="categories" role="group" aria-label="Critère chorégraphique"></div>
-          <label class="field">Élément observé<select id="criterion"></select></label>
+          <fieldset>
+            <legend>Élément observé</legend>
+            <div id="criteria" class="criteria"></div>
+          </fieldset>
           <fieldset>
             <legend>Votre observation</legend>
             <div class="status-grid">

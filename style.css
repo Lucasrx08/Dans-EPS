@@ -139,8 +139,10 @@ textarea { padding: 8px; border: 1px solid var(--line); border-radius: 8px; resi
 .note .jump { border: 0; text-align: left; overflow-wrap: anywhere; }
 .note small { display: block; color: var(--muted); font-weight: 400; }
 .categories { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-.categories button { font-size: .875rem; padding-inline: 9px; background: #f4f6f5; }
-.categories button.selected { background: var(--accent); border-color: #6a9b9a; }
+.criteria { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.criteria button { text-align: left; overflow-wrap: anywhere; }
+.categories button, .criteria button { font-size: .875rem; padding-inline: 9px; background: #f4f6f5; }
+.categories button.selected, .criteria button.selected { background: var(--accent); border-color: #6a9b9a; }
 fieldset { border: 0; margin: 10px 0 0; padding: 0; min-width: 0; }
 legend { font-size: .9rem; font-weight: 600; margin-bottom: 5px; }
 .status-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
