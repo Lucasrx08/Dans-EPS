@@ -445,28 +445,36 @@ function renderCommand() {
   });
 }
 
+$('reviewVideo').onclick = () => show('analyze');
+
 function renderReadiness() {
-  const positive = annotations.filter(item => item.assessment === 'positive').length;
-  const improve = annotations.filter(item => item.assessment === 'improve').length;
   const commandActive = $('level').querySelector(':checked').value === '1';
-  const commandTotal = commandActive ? commandRequirements.length : 0;
-  const commandDone = commandActive ? commandValues.filter((value, index) => value === commandRequirements[index].target).length : 0;
-  const commandProgress = commandActive ? commandValues.reduce((sum, value, index) =>
-    sum + value / commandRequirements[index].target, 0) : 0;
   $('commandPanel').hidden = !commandActive;
-  $('commandCount').textContent = commandDone + ' / ' + commandTotal;
-  const total = annotations.length + 2 + commandTotal;
-  const positiveUnits = positive + Number(positive > 0);
-  const classifiedUnits = positiveUnits + improve + Number(improve > 0);
-  const done = classifiedUnits + commandProgress;
-  const complete = commandDone === commandTotal && classifiedUnits === annotations.length + 2;
-  const percent = complete ? 100 : Math.min(99, Math.floor(done * 100 / total));
-  $('readinessProgress').value = percent;
-  $('readinessProgress').dataset.state = progressState(percent, 100);
-  $('readinessStatus').textContent = complete ? '100 % · Prêt pour l’évaluation' : percent + ' % · Préparation en cours';
-  $('readinessCounts').textContent = positive + ' positifs · ' + improve + ' à améliorer · ' +
-    (annotations.length - positive - improve) + ' à classer' +
-    (commandActive ? ' · ' + commandDone + '/' + commandTotal + ' exigences validées' : '');
+  $('reviewVideo').hidden = !commandActive;
+  $('observedPanel').hidden = commandActive;
+  $('readinessProgress').hidden = commandActive;
+  $('readinessCounts').hidden = commandActive;
+  $('readinessTitle').textContent = commandActive ? 'Commande de 3e' : 'Préparation à l’évaluation';
+
+  let percent;
+  if (commandActive) {
+    const progress = commandValues.reduce((sum, value, index) =>
+      sum + value / commandRequirements[index].target, 0);
+    percent = Math.floor(progress * 100 / commandRequirements.length);
+  } else {
+    const positive = annotations.filter(item => item.assessment === 'positive').length;
+    const improve = annotations.filter(item => item.assessment === 'improve').length;
+    const classified = positive + improve;
+    const done = classified + Number(positive > 0) + Number(improve > 0);
+    percent = Math.floor(done * 100 / (annotations.length + 2));
+    $('readinessProgress').value = percent;
+    $('readinessProgress').dataset.state = progressState(percent, 100);
+    $('readinessCounts').textContent = positive + ' positifs · ' + improve + ' à améliorer · ' +
+      (annotations.length - classified) + ' à classer';
+  }
+  $('readinessStatus').textContent = percent === 100
+    ? '100 % · Prêt pour l’évaluation'
+    : percent + ' % · Préparation en cours';
 }
 
 function renderSummary() {
@@ -474,6 +482,7 @@ function renderSummary() {
   renderCommandDuration();
   const summary = $('summary');
   summary.replaceChildren();
+  if ($('observedPanel').hidden) return;
   if (!annotations.length) {
     const message = document.createElement('p');
     message.className = 'muted';

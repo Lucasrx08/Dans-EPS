@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.5"><script defer src="./app.js?v=0.3.5"></script></head>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#555555"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; worker-src 'self'"><title>Dans'EPS · Observer pour mieux danser</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icon.jpg"><link rel="apple-touch-icon" href="./icon.jpg"><link rel="stylesheet" href="./style.css?v=0.3.6"><script defer src="./app.js?v=0.3.6"></script></head>
 <body>
 <header class="app-header">
   <div class="header-inner">
@@ -93,29 +93,30 @@
     </section>
     <section id="transform" class="view" hidden>
       <div class="intro"><h2>Bilan de la chorégraphie</h2></div>
-      <div class="panel readiness" aria-labelledby="readinessTitle">
+      <section class="panel readiness" aria-labelledby="readinessTitle">
         <div>
-          <h3 id="readinessTitle">Préparation à l’évaluation</h3>
+          <div class="line">
+            <h3 id="readinessTitle">Préparation à l’évaluation</h3>
+            <button id="reviewVideo" type="button" hidden>Revoir la vidéo</button>
+          </div>
           <p id="readinessStatus" role="status"></p>
           <progress id="readinessProgress" aria-label="Préparation à l’évaluation" value="0" max="100"></progress>
-          <p class="muted">Classe chaque repère et identifie au moins un point positif et un point à améliorer.</p>
           <p id="readinessCounts" class="readiness-counts"></p>
+          <div id="commandPanel" hidden>
+            <p class="muted">Vérifie chaque exigence dans la vidéo, puis indique où en est ton groupe.</p>
+            <div id="commandChecklist" class="command-checklist"></div>
+          </div>
         </div>
-      </div>
-      <section id="commandPanel" class="panel command-panel" aria-labelledby="commandTitle" hidden>
-        <div class="line"><h3 id="commandTitle">Commande de 3e</h3><span id="commandCount" class="time">0 / 9</span></div>
-        <p class="muted">Indique ce que tu as vérifié dans la vidéo. Les jauges se mettent à jour automatiquement.</p>
-        <div id="commandChecklist" class="command-checklist"></div>
       </section>
-      <div class="panel observed-panel" aria-labelledby="observedTitle">
+      <div id="observedPanel" class="panel observed-panel" aria-labelledby="observedTitle">
         <h3 id="observedTitle">Critères observés</h3>
         <div id="summary" class="summary"></div>
       </div>
-      <div class="panel teacher-report" aria-labelledby="teacherTitle">
-        <h3 id="teacherTitle"><label for="teacherReport">Bilan de l’enseignant</label></h3>
+      <details class="panel teacher-report">
+        <summary>Bilan de l’enseignant</summary>
         <p id="dictationHelp" class="muted">Sur iPad, touche le champ puis le micro du clavier pour dicter ton bilan. Tu peux ensuite corriger le texte ou le saisir au clavier.</p>
-        <textarea id="teacherReport" rows="5" autocomplete="off" aria-describedby="dictationHelp" placeholder="Bilan de la chorégraphie, sans nom d’élève"></textarea>
-      </div>
+        <textarea id="teacherReport" aria-label="Bilan de l’enseignant" rows="5" autocomplete="off" aria-describedby="dictationHelp" placeholder="Bilan de la chorégraphie, sans nom d’élève"></textarea>
+      </details>
     </section>
     <p id="message" class="feedback muted" role="status"></p>
   </main>
