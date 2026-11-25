@@ -21,6 +21,9 @@ const observationPrompts = [
   'Observe comment les danseurs relient les passages ou interagissent.'
 ];
 let replay = null;
+let zone = null;
+let selectionGesture = null;
+const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
 const say=s=>$('message').textContent=s;
@@ -214,6 +217,90 @@ function finishReplay(completed, message = '') {
   }
 }
 
+function videoBounds() {
+  const bounds = target.getBoundingClientRect();
+  if (!bounds.width || !bounds.height) return null;
+  const scale = Math.min(bounds.width / player.videoWidth, bounds.height / player.videoHeight);
+  const width = player.videoWidth * scale;
+  const height = player.videoHeight * scale;
+  if (!width || !height) return null;
+  return { bounds, width, height, left: (bounds.width - width) / 2, top: (bounds.height - height) / 2 };
+}
+
+function videoPoint(event, clamp = false) {
+  const frame = videoBounds();
+  if (!frame) return null;
+  const x = (event.clientX - frame.bounds.left - frame.left) / frame.width;
+  const y = (event.clientY - frame.bounds.top - frame.top) / frame.height;
+  if (!clamp && (x < 0 || x > 1 || y < 0 || y > 1)) return null;
+  return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
+}
+
+function drawZone() {
+  const marker = $('zoneMarker');
+  const frame = videoBounds();
+  marker.hidden = !zone || !frame || !player.paused || Math.abs(player.currentTime - mark) > 0.18;
+  if (marker.hidden) return;
+  marker.classList.toggle('point', !zone.width && !zone.height);
+  marker.style.left = frame.left + zone.x * frame.width + 'px';
+  marker.style.top = frame.top + zone.y * frame.height + 'px';
+  marker.style.width = zone.width * frame.width + 'px';
+  marker.style.height = zone.height * frame.height + 'px';
+}
+
+function selectScene(point) {
+  if (!videoURL) return;
+  finishReplay(false);
+  player.pause();
+  closeEditor();
+  setNotesOpen(false);
+  $('annotationFeedback').textContent = '';
+  zone = point;
+  mark = player.currentTime;
+  drawZone();
+  $('categories').hidden = false;
+  $('selectionHint').hidden = true;
+}
+
+target.onpointerdown = event => {
+  if (!videoURL || !event.isPrimary || event.button !== 0) return;
+  const point = videoPoint(event);
+  if (!point) return;
+  selectScene({ ...point, width: 0, height: 0 });
+  $('categories').hidden = true;
+  selectionGesture = { point, id: event.pointerId, x: event.clientX, y: event.clientY };
+  target.setPointerCapture(event.pointerId);
+};
+
+function updateSelection(event) {
+  if (selectionGesture?.id !== event.pointerId) return;
+  const end = videoPoint(event, true);
+  if (!end) return;
+  const start = selectionGesture.point;
+  const dragged = Math.hypot(event.clientX - selectionGesture.x, event.clientY - selectionGesture.y) >= 12;
+  zone = dragged ? {
+    x: Math.min(start.x, end.x), y: Math.min(start.y, end.y),
+    width: Math.abs(start.x - end.x), height: Math.abs(start.y - end.y)
+  } : { ...start, width: 0, height: 0 };
+  drawZone();
+}
+target.onpointermove = updateSelection;
+target.onpointerup = event => {
+  if (selectionGesture?.id !== event.pointerId) return;
+  updateSelection(event);
+  selectionGesture = null;
+  $('categories').hidden = false;
+};
+target.onlostpointercapture = () => { if (selectionGesture) closeEditor(); };
+$('wholeScene').onclick = () => {
+  selectScene(null);
+  $('categories').firstElementChild?.focus({ preventScroll: true });
+};
+new ResizeObserver(drawZone).observe(target);
+player.addEventListener('pause', drawZone);
+player.addEventListener('play', drawZone);
+player.addEventListener('seeked', drawZone);
+
 function fillCategories() {
   const visible = Number($('level').value) === 0 ? 6 : data.length;
   const editorOpen = !$('tools').hidden;
@@ -223,13 +310,9 @@ function fillCategories() {
     if (index >= visible && !selected) return;
     const choice = button(item.short, () => {
       if (!videoURL) return;
-      const currentTime = player.currentTime;
       finishReplay(false);
       player.pause();
-      if ($('tools').hidden) {
-        resetEditor();
-        mark = currentTime;
-      }
+      if (!editing) seekTo(mark);
       setNotesOpen(false);
       $('tools').hidden = false;
       selectCategory(index);
@@ -286,12 +369,14 @@ function openEditor() {
 function closeEditor(returnFocus = false) {
   finishReplay(false);
   $('tools').hidden = true;
+  $('categories').hidden = true;
+  $('selectionHint').hidden = false;
+  zone = null;
+  selectionGesture = null;
+  drawZone();
   resetEditor();
   fillCategories();
-  if (returnFocus) {
-    const choices = $('categories').children;
-    (choices[category] || choices[0])?.focus({ preventScroll: true });
-  }
+  if (returnFocus) $('wholeScene').focus({ preventScroll: true });
 }
 
 function setNotesOpen(open) {
@@ -318,10 +403,11 @@ function saveObservation(criterion) {
     id: editing ?? (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
     category,
     criterion,
-    start: mark
+    start: mark,
+    zone
   };
   if (editing === null) annotations.push(observation);
-  else annotations = annotations.map(item => item.id === editing ? observation : item);
+  else annotations = annotations.map(item => item.id === editing ? { ...item, ...observation } : item);
   closeEditor(true);
   renderNotes();
   $('annotationFeedback').textContent = 'Repère enregistré.';
@@ -333,13 +419,43 @@ function edit(observation) {
   seekTo(observation.start);
   editing = observation.id;
   mark = observation.start;
+  zone = observation.zone ?? null;
+  drawZone();
+  $('categories').hidden = false;
+  $('selectionHint').hidden = true;
   $('tools').hidden = false;
   selectCategory(observation.category, observation.criterion);
   openEditor();
 }
 
-function label(a){return data[a.category].items[a.criterion][0]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>{finishReplay(false);player.pause();seekTo(a.start)},'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>{finishReplay(false);player.pause();seekTo(a.start)},'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
+function label(a){return data[a.category].items[a.criterion][0]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>jumpToObservation(a),'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>jumpToObservation(a),'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
+function jumpToObservation(observation) {
+  closeEditor();
+  player.pause();
+  mark = observation.start;
+  seekTo(mark);
+  zone = observation.zone ?? null;
+  drawZone();
+}
+
+function renderReadiness() {
+  const positive = annotations.filter(item => item.assessment === 'positive').length;
+  const improve = annotations.filter(item => item.assessment === 'improve').length;
+  const total = annotations.length + 2;
+  const positiveShare = (positive + Number(positive > 0)) / total;
+  const improveShare = (improve + Number(improve > 0)) / total;
+  const complete = positive + improve === annotations.length && positive > 0 && improve > 0;
+  const percent = complete ? 100 : Math.floor((positiveShare + improveShare) * 100);
+  $('readinessChart').style.setProperty('--positive', positiveShare + 'turn');
+  $('readinessChart').style.setProperty('--classified', (positiveShare + improveShare) + 'turn');
+  $('readinessPercent').textContent = percent + ' %';
+  $('readinessStatus').textContent = complete ? '100 % · Prêt pour l’évaluation' : percent + ' % · Préparation en cours';
+  $('readinessCounts').textContent = positive + ' positifs · ' + improve + ' à améliorer · ' +
+    (annotations.length - positive - improve) + ' à classer';
+}
+
 function renderSummary() {
+  renderReadiness();
   const summary = $('summary');
   summary.replaceChildren();
   if (!annotations.length) {
@@ -362,9 +478,22 @@ function renderSummary() {
       const row = document.createElement('li');
       row.append(button(time(observation.start) + ' · ' + label(observation), () => {
         show('analyze');
-        player.pause();
-        seekTo(observation.start);
+        jumpToObservation(observation);
       }));
+      const assessment = document.createElement('select');
+      assessment.setAttribute('aria-label', 'Classer ' + label(observation) + ' à ' + time(observation.start));
+      for (const [value, text] of [['', 'À classer'], ['positive', 'Point positif'], ['improve', 'À améliorer']]) {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        assessment.append(option);
+      }
+      assessment.value = observation.assessment ?? '';
+      assessment.onchange = () => {
+        observation.assessment = assessment.value;
+        renderReadiness();
+      };
+      row.append(assessment);
       list.append(row);
     }
     group.append(heading, list);
