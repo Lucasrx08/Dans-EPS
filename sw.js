@@ -1,1 +1,26 @@
-const CACHE='dans-eps-v0.2.0';const ROOT=new URL('./',self.location.href);const ASSETS=['./','./index.html','./style.css','./app.js','./manifest.webmanifest','./icon.jpg'].map(p=>new URL(p,ROOT).href);self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('dans-eps-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('message',e=>{if(e.data==='ACTIVATE')self.skipWaiting()});self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||!ASSETS.includes(e.request.url))return;e.respondWith(caches.open(CACHE).then(c=>c.match(e.request)).then(r=>r||fetch(e.request))) });
+const VERSION = '0.2.1';
+const CACHE = 'dans-eps-v' + VERSION;
+const ROOT = new URL('./', self.location.href);
+const ASSETS = [
+  './', './index.html', './style.css?v=' + VERSION, './app.js?v=' + VERSION,
+  './manifest.webmanifest', './icon.jpg'
+].map(path => new URL(path, ROOT).href);
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => {
+    return cache.addAll(ASSETS.map(url => new Request(url, { cache: 'reload' })));
+  }));
+});
+self.addEventListener('activate', event => {
+  event.waitUntil(caches.keys().then(keys => Promise.all(
+    keys.filter(key => key.startsWith('dans-eps-') && key !== CACHE).map(key => caches.delete(key))
+  )).then(() => self.clients.claim()));
+});
+self.addEventListener('message', event => {
+  if (event.data === 'ACTIVATE') self.skipWaiting();
+});
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET' || !ASSETS.includes(event.request.url)) return;
+  event.respondWith(caches.open(CACHE).then(cache => cache.match(event.request))
+    .then(cached => cached || fetch(event.request)));
+});
