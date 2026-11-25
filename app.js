@@ -1,28 +1,14 @@
 'use strict';
 const $=id=>document.getElementById(id);
-const data=[
- {name:'Déplacements / espace',short:'Espace',items:[['Diagonale','Traversez la scène en diagonale.'],['Trajectoire courbe','Essayez une trajectoire courbe plutôt que rectiligne.'],['Changement de direction','Variez les directions du déplacement.'],['Occupation scénique','Utilisez une autre zone de la scène.'],['Niveaux haut / moyen / bas','Intégrez un changement de hauteur.'],['Passage au sol','Construisez un passage au sol contrôlé.']]},
- {name:'Formations',short:'Formations',items:[['Ligne','Alignez-vous sur un même axe.'],['Colonne','Placez-vous les uns derrière les autres.'],['Diagonale','Alignez-vous en diagonale.'],['Cercle','Répartissez-vous autour d’un centre.'],['V','Formez deux lignes convergentes.'],['Quinconce','Alternez les placements sur deux lignes.'],['Groupe compact / dispersé','Variez les distances entre danseurs.'],['Transition de formation','Transformez le déplacement entre deux formations en mouvement dansé.']]},
- {name:'Gestes parasites',short:'Gestes parasites',items:[['Hésitation / arrêt involontaire','Répétez le passage pour rendre le mouvement continu.'],['Regard de vérification','Utilisez des repères corporels ou musicaux plutôt que de chercher le regard des autres.'],['Rire / parole involontaire','Maintenez votre intention jusqu’à la fin.'],['Ajustement de tenue / cheveux','Préparez la tenue avant de commencer.'],['Attente non dansée','Donnez une intention au corps pendant l’attente.']]},
- {name:'Refrain imposé',short:'Refrain',items:[['Apparition du refrain','Rendez la phrase imposée identifiable.'],['Synchronisation du refrain','Répétez la phrase avec des repères communs.'],['Transformation du refrain','Changez son orientation, son énergie ou son niveau.'],['Répétition du refrain','Réintégrez le refrain à un moment choisi.']]},
- {name:'Temps / rythme',short:'Temps',items:[['Lent / rapide','Créez un contraste net de vitesse.'],['Accélération / décélération','Faites évoluer progressivement la vitesse.'],['Immobilité volontaire','Marquez un arrêt expressif.'],['Rupture rythmique','Introduisez une rupture perceptible.'],['Relation à la musique','Choisissez des repères sonores communs.'],['Synchronisation','Travaillez les départs et les fins de mouvements.']]},
- {name:'Procédés de composition',short:'Procédés',items:[['Unisson','Même mouvement réalisé simultanément.'],['Canon','Même mouvement déclenché successivement à des instants différents.'],['Répétition','Reproduisez une phrase gestuelle.'],['Miroir','Réalisez des gestes symétriques.'],['Accumulation','Ajoutez progressivement des mouvements ou des danseurs.'],['Alternance','Alternez les interventions des danseurs.'],['Contraste','Opposez deux qualités de mouvement.'],['Question-réponse','Un mouvement d’un danseur appelle une réponse d’un autre.']]},
- {name:'Corps / énergie',short:'Corps',items:[['Amplitude','Agrandissez la trajectoire des gestes.'],['Dissociation','Mobilisez différentes parties du corps.'],['Contraste d’énergie','Alternez un mouvement fluide et un mouvement explosif.'],['Intention artistique','Rendez l’émotion lisible dans les gestes.']]},
- {name:'Structure / relations',short:'Structure',items:[['Début / fin','Rendez le début et la fin clairement perceptibles.'],['Transition','Reliez deux phrases sans rupture involontaire.'],['Relation entre danseurs','Créez une interaction intentionnelle.']]}
+const data = [
+  { short: 'TEMPS', items: ['Lent / rapide', 'Accélération / décélération', 'Immobilité', 'Rupture de rythme', 'Accord avec la musique'] },
+  { short: 'ESPACE', items: ['Directions', 'Trajectoires', 'Niveaux haut / moyen / bas', 'Occupation de la scène', 'Formations', 'Changement de formation'] },
+  { short: 'ÉNERGIE', items: ['Fluide', 'Saccadé', 'Léger', 'Lourd', 'Explosif', 'Contraste d’énergie'] },
+  { short: 'RELATION', items: ['Regards', 'Contact', 'Proximité / éloignement', 'Action / réaction', 'Porté'] },
+  { short: 'CORPS', items: ['Amplitude', 'Dissociation', 'Équilibre / déséquilibre', 'Appuis', 'Parties du corps mobilisées'] },
+  { short: 'PROCÉDÉ', items: ['Unisson', 'Canon', 'Répétition', 'Miroir', 'Accumulation', 'Alternance', 'Question-réponse'] }
 ];
-const observationPrompts = [
-  'Suis le trajet des danseurs. Où vont-ils et à quelle hauteur évoluent-ils ?',
-  'Regarde le groupe dans son ensemble. Quelle forme dessinent les placements ?',
-  'Repère un geste qui interrompt la danse ou détourne l’attention.',
-  'Cherche la phrase imposée. Comment le groupe la reprend-il ?',
-  'Compare les vitesses et les arrêts. Qu’est-ce qui change dans le rythme ?',
-  'Compare le moment où chacun bouge. Comment les mouvements se répondent-ils ?',
-  'Regarde l’amplitude des gestes et les changements d’énergie.',
-  'Observe comment les danseurs relient les passages ou interagissent.'
-];
-let replay = null;
-let zone = null;
-let selectionGesture = null;
+let selectionPointer = null;
 const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
@@ -158,151 +144,63 @@ $('start').onclick=()=>{if(!stream)return;if(videoURL&&!confirm('Remplacer la vi
 $('stop').onclick=()=>{if(rec?.state==='recording'){rec.stop();$('stop').disabled=true;say('Préparation de la vidéo…')}};
 function seekTo(n){if(videoURL&&Number.isFinite(n)){try{player.currentTime=Math.max(0,Math.min(length()||n,n))}catch(_){say('Recherche indisponible sur ce format.')}}}
 function renderClock(){const d=length();$('now').textContent=time(player.currentTime);$('duration').textContent=time(d);$('seek').max=d||1;$('seek').value=player.currentTime||0;$('cursor').style.left=(d?Math.min(100,player.currentTime/d*100):0)+'%';}
-player.ontimeupdate = () => {
-  renderClock();
-  if (replay && !player.seeking && player.currentTime >= replay.end) finishReplay(true);
+player.ontimeupdate = renderClock;
+player.ondurationchange = () => { renderClock(); renderNotes(); };
+player.onloadedmetadata = player.ondurationchange;
+player.onpause = () => { $('play').textContent = '▶ Lecture'; };
+player.onplay = () => {
+  closeEditor();
+  $('play').textContent = '❚❚ Pause';
 };
-player.onended = () => {
-  if (replay) finishReplay(true);
+player.onerror = () => {
+  if (videoURL) say('Format vidéo non lisible sur ce navigateur. Essayez une autre vidéo.');
 };
-player.ondurationchange=()=>{renderClock();renderNotes()};player.onloadedmetadata=()=>{renderClock();renderNotes()};player.onpause=()=>{$('play').textContent='▶ Lecture'};player.onplay=()=>{$('play').textContent='❚❚ Pause'};player.onerror=()=>{finishReplay(false, 'Ralenti indisponible.');if(videoURL)say('Format vidéo non lisible sur ce navigateur. Essayez une autre vidéo.')};
 $('play').onclick = () => {
-  if (replay) {
-    finishReplay(false);
-    return;
-  }
   if (player.paused) player.play().catch(() => say('Lecture impossible pour ce format.'));
   else player.pause();
 };
-$('back').onclick = () => { finishReplay(false); seekTo(player.currentTime - 5); };
-$('forward').onclick = () => { finishReplay(false); seekTo(player.currentTime + 5); };
-$('seek').oninput = event => { finishReplay(false); seekTo(Number(event.target.value)); };
+$('back').onclick = () => seekTo(player.currentTime - 5);
+$('forward').onclick = () => seekTo(player.currentTime + 5);
+$('seek').oninput = event => seekTo(Number(event.target.value));
 $('speed').onchange = event => {
-  finishReplay(false);
   try { player.playbackRate = Number(event.target.value); }
   catch (_) { say('Vitesse indisponible sur cet appareil.'); }
 };
 
-$('replay').onclick = () => {
-  if (replay || $('tools').hidden) return;
-  const target = Math.max(mark, 1);
-  const end = Math.min(length() || target, target);
-  replay = { end, rate: player.playbackRate };
-  const currentReplay = replay;
-  $('replay').disabled = true;
-  $('replayStatus').textContent = 'Ralenti en cours…';
-  try {
-    player.playbackRate = 0.5;
-    seekTo(Math.max(0, end - 2));
-    player.play().catch(() => {
-      if (replay === currentReplay) finishReplay(false, 'Ralenti indisponible. Réessaie.');
-    });
-  } catch (_) {
-    finishReplay(false, 'Ralenti indisponible. Réessaie.');
-  }
-};
-
-function finishReplay(completed, message = '') {
-  if (!replay) return;
-  const { rate } = replay;
-  replay = null;
-  player.pause();
-  player.playbackRate = rate;
-  $('replay').disabled = false;
-  $('replayStatus').textContent = message;
-  if (completed) {
-    seekTo(mark);
-    $('observationChoices').hidden = false;
-    $('replayStatus').textContent = 'Choisis ce que tu as observé.';
-  }
-}
-
-function videoBounds() {
-  const bounds = target.getBoundingClientRect();
-  if (!bounds.width || !bounds.height) return null;
-  const scale = Math.min(bounds.width / player.videoWidth, bounds.height / player.videoHeight);
-  const width = player.videoWidth * scale;
-  const height = player.videoHeight * scale;
-  if (!width || !height) return null;
-  return { bounds, width, height, left: (bounds.width - width) / 2, top: (bounds.height - height) / 2 };
-}
-
-function videoPoint(event, clamp = false) {
-  const frame = videoBounds();
-  if (!frame) return null;
-  const x = (event.clientX - frame.bounds.left - frame.left) / frame.width;
-  const y = (event.clientY - frame.bounds.top - frame.top) / frame.height;
-  if (!clamp && (x < 0 || x > 1 || y < 0 || y > 1)) return null;
-  return { x: Math.max(0, Math.min(1, x)), y: Math.max(0, Math.min(1, y)) };
-}
-
-function drawZone() {
-  const marker = $('zoneMarker');
-  const frame = videoBounds();
-  marker.hidden = !zone || !frame || !player.paused || Math.abs(player.currentTime - mark) > 0.18;
-  if (marker.hidden) return;
-  marker.classList.toggle('point', !zone.width && !zone.height);
-  marker.style.left = frame.left + zone.x * frame.width + 'px';
-  marker.style.top = frame.top + zone.y * frame.height + 'px';
-  marker.style.width = zone.width * frame.width + 'px';
-  marker.style.height = zone.height * frame.height + 'px';
-}
-
-function selectScene(point) {
+function selectScene() {
   if (!videoURL) return;
-  finishReplay(false);
   player.pause();
   closeEditor();
   setNotesOpen(false);
   $('annotationFeedback').textContent = '';
-  zone = point;
-  mark = player.currentTime;
-  drawZone();
   $('categories').hidden = false;
   $('selectionHint').hidden = true;
 }
 
 target.onpointerdown = event => {
   if (!videoURL || !event.isPrimary || event.button !== 0) return;
-  const point = videoPoint(event);
-  if (!point) return;
-  selectScene({ ...point, width: 0, height: 0 });
-  $('categories').hidden = true;
-  selectionGesture = { point, id: event.pointerId, x: event.clientX, y: event.clientY };
+  const bounds = target.getBoundingClientRect();
+  const scale = Math.min(bounds.width / player.videoWidth, bounds.height / player.videoHeight);
+  const horizontalInset = (bounds.width - player.videoWidth * scale) / 2;
+  const verticalInset = (bounds.height - player.videoHeight * scale) / 2;
+  if (!player.videoWidth || event.clientX < bounds.left + horizontalInset ||
+      event.clientX > bounds.right - horizontalInset || event.clientY < bounds.top + verticalInset ||
+      event.clientY > bounds.bottom - verticalInset) return;
+  player.pause();
+  selectionPointer = event.pointerId;
   target.setPointerCapture(event.pointerId);
 };
-
-function updateSelection(event) {
-  if (selectionGesture?.id !== event.pointerId) return;
-  const end = videoPoint(event, true);
-  if (!end) return;
-  const start = selectionGesture.point;
-  const dragged = Math.hypot(event.clientX - selectionGesture.x, event.clientY - selectionGesture.y) >= 12;
-  zone = dragged ? {
-    x: Math.min(start.x, end.x), y: Math.min(start.y, end.y),
-    width: Math.abs(start.x - end.x), height: Math.abs(start.y - end.y)
-  } : { ...start, width: 0, height: 0 };
-  drawZone();
-}
-target.onpointermove = updateSelection;
 target.onpointerup = event => {
-  if (selectionGesture?.id !== event.pointerId) return;
-  updateSelection(event);
-  selectionGesture = null;
-  $('categories').hidden = false;
+  if (selectionPointer === event.pointerId) selectScene();
 };
-target.onlostpointercapture = () => { if (selectionGesture) closeEditor(); };
+target.onlostpointercapture = () => { selectionPointer = null; };
 $('wholeScene').onclick = () => {
-  selectScene(null);
+  selectScene();
   $('categories').firstElementChild?.focus({ preventScroll: true });
 };
-new ResizeObserver(drawZone).observe(target);
-player.addEventListener('pause', drawZone);
-player.addEventListener('play', drawZone);
-player.addEventListener('seeked', drawZone);
 
 function fillCategories() {
-  const visible = Number($('level').value) === 0 ? 6 : data.length;
+  const visible = Number($('level').value) === 0 ? 3 : data.length;
   const editorOpen = !$('tools').hidden;
   $('categories').replaceChildren();
   data.forEach((item, index) => {
@@ -310,7 +208,6 @@ function fillCategories() {
     if (index >= visible && !selected) return;
     const choice = button(item.short, () => {
       if (!videoURL) return;
-      finishReplay(false);
       player.pause();
       if (!editing) seekTo(mark);
       setNotesOpen(false);
@@ -320,25 +217,20 @@ function fillCategories() {
     }, selected ? 'selected' : '');
     choice.setAttribute('aria-controls', 'tools');
     choice.setAttribute('aria-expanded', String(selected));
-    choice.title = item.name;
     $('categories').append(choice);
   });
 }
 
 function selectCategory(index, selected = null) {
   category = index;
-  $('observationPrompt').textContent = observationPrompts[index];
-  $('observationChoices').hidden = selected === null;
-  $('replayStatus').textContent = '';
-  $('editorTitle').textContent = editing === null ? data[index].short : 'Modifier le repère';
+  $('tools').setAttribute('aria-label', data[index].short);
   fillCategories();
   const choices = $('criteria');
   choices.replaceChildren();
-  data[category].items.forEach(([label], itemIndex) => {
+  data[category].items.forEach((label, itemIndex) => {
     const choice = button(label, () => saveObservation(itemIndex), itemIndex === selected ? 'selected' : '');
     choices.append(choice);
   });
-  updateMark();
 }
 
 $('level').onchange = () => closeEditor();
@@ -350,31 +242,19 @@ data.forEach((item, index) => {
 });
 $('filter').onchange = renderNotes;
 
-function updateMark() {
-  $('markTime').textContent = time(mark);
-}
-
-function resetEditor() {
-  editing = null;
-  mark = player.currentTime || 0;
-  updateMark();
-}
-
 function openEditor() {
   $('annotationFeedback').textContent = '';
   $('tools').scrollTop = 0;
-  $('editorTitle').focus({ preventScroll: true });
+  $('criteria').firstElementChild?.focus({ preventScroll: true });
 }
 
 function closeEditor(returnFocus = false) {
-  finishReplay(false);
   $('tools').hidden = true;
   $('categories').hidden = true;
   $('selectionHint').hidden = false;
-  zone = null;
-  selectionGesture = null;
-  drawZone();
-  resetEditor();
+  selectionPointer = null;
+  editing = null;
+  mark = player.currentTime || 0;
   fillCategories();
   if (returnFocus) $('wholeScene').focus({ preventScroll: true });
 }
@@ -396,15 +276,13 @@ $('closeNotes').onclick = () => {
 };
 $('cancelEdit').onclick = () => closeEditor(true);
 function saveObservation(criterion) {
-  if (!videoURL || $('tools').hidden || $('observationChoices').hidden) return;
-  finishReplay(false);
+  if (!videoURL || $('tools').hidden) return;
   player.pause();
   const observation = {
     id: editing ?? (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)),
     category,
     criterion,
-    start: mark,
-    zone
+    start: mark
   };
   if (editing === null) annotations.push(observation);
   else annotations = annotations.map(item => item.id === editing ? { ...item, ...observation } : item);
@@ -419,8 +297,6 @@ function edit(observation) {
   seekTo(observation.start);
   editing = observation.id;
   mark = observation.start;
-  zone = observation.zone ?? null;
-  drawZone();
   $('categories').hidden = false;
   $('selectionHint').hidden = true;
   $('tools').hidden = false;
@@ -428,14 +304,12 @@ function edit(observation) {
   openEditor();
 }
 
-function label(a){return data[a.category].items[a.criterion][0]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>jumpToObservation(a),'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>jumpToObservation(a),'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
+function label(a){return data[a.category].items[a.criterion]}function renderNotes(){const selected=$('filter').value;const filtered=annotations.filter(a=>selected===''||Number(selected)===a.category).sort((a,b)=>a.start-b.start);$('notes').replaceChildren();$('timeline').querySelectorAll('.marker').forEach(x=>x.remove());const d=length();for(const a of filtered){if(d>0){const m=button('',()=>jumpToObservation(a),'marker');m.style.left=Math.min(100,Math.max(0,a.start/d*100))+'%';m.title=time(a.start)+' · '+label(a);m.setAttribute('aria-label',m.title);$('timeline').append(m)}const row=document.createElement('div');row.className='note';const b=button(time(a.start)+' · '+label(a),()=>jumpToObservation(a),'jump');const small=document.createElement('small');small.textContent=data[a.category].short;b.append(small);row.append(b,button('Modifier',()=>edit(a)),button('×',()=>{annotations=annotations.filter(x=>x.id!==a.id);if(editing===a.id)closeEditor();renderNotes()}));row.lastChild.setAttribute('aria-label','Supprimer '+label(a));$('notes').append(row)}if(!filtered.length){const p=document.createElement('p');p.className='muted';p.textContent='Aucun repère pour ce critère.';$('notes').append(p)}$('timeline').hidden=!d||!filtered.length;$('toggleNotes').hidden=!annotations.length;if(!annotations.length)setNotesOpen(false)}
 function jumpToObservation(observation) {
   closeEditor();
   player.pause();
   mark = observation.start;
   seekTo(mark);
-  zone = observation.zone ?? null;
-  drawZone();
 }
 
 function renderReadiness() {

@@ -214,7 +214,7 @@ dialog::backdrop { background: #0008; }
 
 :root { --ink: #172e30; --accent: #8fbab9; --stage: #102326; }
 .app-header { background: var(--stage); color: #fff; border-color: #30484a; }
-.brand h1, h2, #editorTitle {
+.brand h1, h2 {
   font-family: "Avenir Next Condensed", "Arial Narrow", "Avenir Next", system-ui, sans-serif;
   font-weight: 900;
   letter-spacing: -.035em;
@@ -240,17 +240,12 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .analysis-dock .categories button.selected { box-shadow: inset 0 0 0 3px #203d40; }
 .analysis-dock .categories button:active { transform: scale(.97); }
 #tools {
-  border: 0;
-  border-top: 4px solid #8fbab9;
-  background: #f7fffc;
-  box-shadow: 0 8px 25px #10232640;
-  animation: reveal-observation .22s ease-out;
+  display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 5px;
+  padding: 4px; animation: reveal-observation .18s ease-out;
 }
-#editorTitle { font-size: clamp(1.25rem, 3vw, 1.85rem); }
-#observationPrompt { margin: 3px 0 0; }
-.review-controls { margin-top: 6px; }
-#replayStatus { color: #365958; font-size: .85rem; font-weight: 650; }
-#observationChoices:not([hidden]) { animation: reveal-observation .18s ease-out; }
+#tools .criteria { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; }
+#tools button { box-shadow: 0 2px 8px #10232635; }
+#cancelEdit { color: white; background: #203d40; border-color: transparent; }
 #annotationFeedback:not(:empty) {
   width: max-content;
   max-width: calc(100% - 24px);
@@ -264,22 +259,12 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 @media (prefers-reduced-motion: reduce) {
-  #tools, #observationChoices:not([hidden]), #annotationFeedback:not(:empty) { animation: none; }
+  #tools, #annotationFeedback:not(:empty) { animation: none; }
   .analysis-dock .categories button { transition: none; }
   .analysis-dock .categories button:active { transform: none; }
 }
 
 #videoTarget { position: absolute; inset: 0; touch-action: none; cursor: crosshair; }
-#zoneMarker {
-  position: absolute;
-  border: 2px solid #b8fff0;
-  background: #b8fff027;
-  box-shadow: 0 0 0 1px #102326;
-  pointer-events: none;
-}
-#zoneMarker.point {
-  min-width: 24px; min-height: 24px; border-radius: 50%; transform: translate(-50%, -50%);
-}
 #selectionHint {
   align-self: center; display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
   gap: 6px 12px; text-align: center; color: #fff; background: #14292def; padding: 6px 10px; border-radius: 12px;
