@@ -273,14 +273,18 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .analysis-dock .categories { justify-content: center; }
 .analysis-dock .categories button { flex: 0 1 auto; }
 .readiness { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
-.readiness-chart {
-  display: grid; place-items: center; width: 112px; aspect-ratio: 1; flex: none; border-radius: 50%;
-  background: conic-gradient(#337f6e 0 var(--positive, 0turn), #e0ad52 var(--positive, 0turn) var(--classified, 0turn), #6b77b4 var(--classified, 0turn) var(--prepared, 0turn), #e4eae8 var(--prepared, 0turn) 1turn);
+.readiness > div { width: 100%; }
+.readiness progress { width: 100%; }
+#readinessProgress, .command-reading progress {
+  height: 12px; appearance: none; border: 0; border-radius: 99px;
+  overflow: hidden; color: var(--gauge); background: var(--gauge-track);
 }
-.readiness-chart span {
-  display: grid; place-items: center; width: 76%; aspect-ratio: 1; border-radius: 50%;
-  background: #fff; font-weight: 850; font-size: 1.25rem;
-}
+[data-state="missing"] { --gauge: #d52c37; --gauge-track: #f8c9cd; }
+[data-state="partial"] { --gauge: #ed8200; --gauge-track: #fae3c6; }
+[data-state="complete"] { --gauge: #1e9d49; --gauge-track: #c5ebd0; }
+#readinessProgress::-webkit-progress-bar, .command-reading progress::-webkit-progress-bar { background: var(--gauge-track); }
+#readinessProgress::-webkit-progress-value, .command-reading progress::-webkit-progress-value { background: var(--gauge); }
+#readinessProgress::-moz-progress-bar, .command-reading progress::-moz-progress-bar { background: var(--gauge); }
 .readiness-counts { font-weight: 700; }
 .observed-panel { margin-top: 12px; }
 .summary li { display: grid; gap: 3px; margin-bottom: 5px; }
@@ -317,11 +321,21 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .command-checklist {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 255px), 1fr)); gap: 6px;
 }
-.command-checklist label {
-  display: flex; align-items: center; gap: 10px; min-height: 48px;
-  padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
-  background: #f3f5f4; cursor: pointer;
+.command-checklist fieldset {
+  margin: 0; min-width: 0; padding: 8px 10px; border-radius: 9px;
+  border: 1px solid var(--line); border-inline-start: 4px solid var(--gauge);
 }
-.command-checklist label:has(input:checked) { background: #e7eaf9; border-color: #6b77b4; }
-.command-checklist input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: #515d9a; }
-.command-checklist small { display: block; }
+.command-checklist legend { padding-inline: 4px; font-weight: 800; }
+.command-reading { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.command-reading progress { flex: 1; width: 0; }
+.command-reading output { font-weight: 750; white-space: nowrap; }
+.command-choices { display: flex; gap: 5px; }
+.command-choices label { flex: 1; position: relative; }
+.command-choices input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.command-choices span {
+  display: grid; place-items: center; min-height: 44px; padding: 3px;
+  border-radius: 8px; background: #edf2ef; cursor: pointer; font-weight: 700;
+}
+.command-choices input:checked + span { outline: 2px solid var(--gauge); outline-offset: -2px; background: var(--gauge-track); }
+.command-choices input:focus-visible + span { outline: 2px solid #203d40; outline-offset: 1px; }
+.command-checklist small { display: block; margin-top: 4px; }

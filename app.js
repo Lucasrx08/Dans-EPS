@@ -13,7 +13,18 @@ let selectionArea = null;
 const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
-const commandChecks = Array.from($('commandChecklist').querySelectorAll('input'));
+const commandRequirements = [
+  { label: 'Procédés de composition', target: 3 },
+  { label: 'Formations différentes', target: 3 },
+  { label: 'Déplacements collectifs', target: 2 },
+  { label: 'Début identifiable', target: 1 },
+  { label: 'Passages du refrain imposé avec variation de temps', target: 2 },
+  { label: 'Aucun regard parasite', target: 1 },
+  { label: 'Aucun geste parasite', target: 1 },
+  { label: '2 min de chorégraphie', target: 1, duration: true },
+  { label: 'Fin identifiable', target: 1 }
+];
+const commandValues = commandRequirements.map(() => 0);
 const say=s=>$('message').textContent=s;
 const time=n=>{n=Math.max(0,Math.floor(Number(n)||0));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
 const length=()=>Number.isFinite(player.duration)&&player.duration>0?player.duration:knownDuration;
@@ -93,7 +104,7 @@ function releaseCamera() {
   $('recordBadge').hidden = true;
   captureControls();
 }
-function clearVideo(){player.pause();player.removeAttribute('src');player.load();if(videoURL)URL.revokeObjectURL(videoURL);videoURL=null;knownDuration=0;annotations=[];commandChecks.forEach(check => { check.checked = false; });$('teacherReport').value='';closeEditor();$('annotationFeedback').textContent='';controls();renderNotes();renderClock()}
+function clearVideo(){player.pause();player.removeAttribute('src');player.load();if(videoURL)URL.revokeObjectURL(videoURL);videoURL=null;knownDuration=0;annotations=[];commandValues.fill(0);renderCommand();$('teacherReport').value='';closeEditor();$('annotationFeedback').textContent='';controls();renderNotes();renderClock()}
 function resetSession(){recordGeneration++;if(rec&&rec.state!=='inactive'){try{rec.stop()}catch(_){}}rec=null;chunks=[];releaseCamera();clearVideo();$('file').value='';$('audio').checked=false;captureControls();$('filter').value='';show('film');say('Séance effacée.')}
 $('reset').onclick=()=>{if(confirm('Effacer la vidéo, les repères et le bilan de cette séance ?'))resetSession()};
 $('import').onclick = () => $('file').click();
@@ -373,26 +384,85 @@ function renderCommandDuration() {
   $('commandDuration').textContent = duration > 0 ? 'Vidéo · ' + time(duration) : '';
 }
 
-$('commandChecklist').onchange = renderReadiness;
+function progressState(value, target) {
+  if (value === 0) return 'missing';
+  return value === target ? 'complete' : 'partial';
+}
+
+function updateCommandGauge(card, index) {
+  const { target } = commandRequirements[index];
+  const value = commandValues[index];
+  const state = progressState(value, target);
+  card.dataset.state = state;
+  card.querySelector('progress').value = value;
+  card.querySelector('output').textContent = target > 1 ? value + ' / ' + target : value ? 'Validé' : 'À valider';
+}
+
+function renderCommand() {
+  const checklist = $('commandChecklist');
+  checklist.replaceChildren();
+  commandRequirements.forEach(({ label, target, duration }, index) => {
+    const card = document.createElement('fieldset');
+    const legend = document.createElement('legend');
+    legend.textContent = target > 1 ? target + ' × ' + label : label;
+    const reading = document.createElement('div');
+    reading.className = 'command-reading';
+    const progress = document.createElement('progress');
+    progress.max = target;
+    progress.setAttribute('aria-label', label);
+    const output = document.createElement('output');
+    reading.append(progress, output);
+    card.append(legend, reading);
+
+    const choices = document.createElement('div');
+    choices.className = 'command-choices';
+    const values = target === 1 ? [1] : Array.from({ length: target + 1 }, (_, count) => count);
+    for (const value of values) {
+      const choice = document.createElement('label');
+      const input = document.createElement('input');
+      input.type = target === 1 ? 'checkbox' : 'radio';
+      input.name = 'command-' + index;
+      input.checked = commandValues[index] === value;
+      const text = document.createElement('span');
+      text.textContent = target === 1 ? 'Valider' : String(value);
+      input.onchange = () => {
+        commandValues[index] = input.checked ? value : 0;
+        updateCommandGauge(card, index);
+        renderReadiness();
+      };
+      choice.append(input, text);
+      choices.append(choice);
+    }
+    card.append(choices);
+    if (duration) {
+      const actual = document.createElement('small');
+      actual.id = 'commandDuration';
+      actual.className = 'muted';
+      card.append(actual);
+    }
+    checklist.append(card);
+    updateCommandGauge(card, index);
+  });
+}
 
 function renderReadiness() {
   const positive = annotations.filter(item => item.assessment === 'positive').length;
   const improve = annotations.filter(item => item.assessment === 'improve').length;
   const commandActive = $('level').querySelector(':checked').value === '1';
-  const commandTotal = commandActive ? commandChecks.length : 0;
-  const commandDone = commandActive ? commandChecks.filter(check => check.checked).length : 0;
+  const commandTotal = commandActive ? commandRequirements.length : 0;
+  const commandDone = commandActive ? commandValues.filter((value, index) => value === commandRequirements[index].target).length : 0;
+  const commandProgress = commandActive ? commandValues.reduce((sum, value, index) =>
+    sum + value / commandRequirements[index].target, 0) : 0;
   $('commandPanel').hidden = !commandActive;
   $('commandCount').textContent = commandDone + ' / ' + commandTotal;
   const total = annotations.length + 2 + commandTotal;
   const positiveUnits = positive + Number(positive > 0);
   const classifiedUnits = positiveUnits + improve + Number(improve > 0);
-  const done = classifiedUnits + commandDone;
-  const complete = done === total;
-  const percent = Math.floor(done * 100 / total);
-  $('readinessChart').style.setProperty('--positive', positiveUnits / total + 'turn');
-  $('readinessChart').style.setProperty('--classified', classifiedUnits / total + 'turn');
-  $('readinessChart').style.setProperty('--prepared', done / total + 'turn');
-  $('readinessPercent').textContent = percent + ' %';
+  const done = classifiedUnits + commandProgress;
+  const complete = commandDone === commandTotal && classifiedUnits === annotations.length + 2;
+  const percent = complete ? 100 : Math.min(99, Math.floor(done * 100 / total));
+  $('readinessProgress').value = percent;
+  $('readinessProgress').dataset.state = progressState(percent, 100);
   $('readinessStatus').textContent = complete ? '100 % · Prêt pour l’évaluation' : percent + ' % · Préparation en cours';
   $('readinessCounts').textContent = positive + ' positifs · ' + improve + ' à améliorer · ' +
     (annotations.length - positive - improve) + ' à classer' +
@@ -450,4 +520,4 @@ function renderSummary() {
 $('privacyBtn').onclick=()=>{if($('privacyDialog').showModal)$('privacyDialog').showModal();else $('privacyDialog').setAttribute('open','')};$('closePrivacy').onclick=()=>{if($('privacyDialog').close)$('privacyDialog').close();else $('privacyDialog').removeAttribute('open')};
 window.addEventListener('pagehide',()=>{recordGeneration++;if(rec&&rec.state!=='inactive')try{rec.stop()}catch(_){}rec=null;chunks=[];releaseCamera();clearVideo();$('file').value='';captureControls();show('film')});
 if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').then(reg=>{const offer=()=>{if(reg.waiting&&navigator.serviceWorker.controller){waitingWorker=reg.waiting;$('update').hidden=false}};offer();reg.addEventListener('updatefound',()=>{reg.installing?.addEventListener('statechange',offer)});$('update').onclick=()=>{if(!waitingWorker)return;if(rec&&rec.state!=='inactive'||countTimer){say('Terminez la captation avant la mise à jour.');return}if((videoURL||stream)&&!confirm('La mise à jour effacera la séance. Continuer ?'))return;resetSession();navigator.serviceWorker.addEventListener('controllerchange',()=>location.reload(),{once:true});waitingWorker.postMessage('ACTIVATE')}}).catch(()=>say('Mode hors connexion non disponible pour le moment.'))}
-fillCategories();controls();renderNotes();renderClock();
+renderCommand();fillCategories();controls();renderNotes();renderClock();
