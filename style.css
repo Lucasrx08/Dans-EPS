@@ -275,7 +275,7 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
 .readiness { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; }
 .readiness-chart {
   display: grid; place-items: center; width: 112px; aspect-ratio: 1; flex: none; border-radius: 50%;
-  background: conic-gradient(#337f6e 0 var(--positive, 0turn), #e0ad52 var(--positive, 0turn) var(--classified, 0turn), #e4eae8 var(--classified, 0turn) 1turn);
+  background: conic-gradient(#337f6e 0 var(--positive, 0turn), #e0ad52 var(--positive, 0turn) var(--classified, 0turn), #6b77b4 var(--classified, 0turn) var(--prepared, 0turn), #e4eae8 var(--prepared, 0turn) 1turn);
 }
 .readiness-chart span {
   display: grid; place-items: center; width: 76%; aspect-ratio: 1; border-radius: 50%;
@@ -312,3 +312,16 @@ h2 { font-size: clamp(1.85rem, 5vw, 3.4rem); }
   position: absolute; pointer-events: none; border: 2px dashed #b8fff0;
   background: #aee5da30; box-shadow: 0 0 0 1px #102326;
 }
+
+.command-panel { margin-top: 12px; }
+.command-checklist {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 255px), 1fr)); gap: 6px;
+}
+.command-checklist label {
+  display: flex; align-items: center; gap: 10px; min-height: 48px;
+  padding: 8px 10px; border-radius: 9px; border: 1px solid var(--line);
+  background: #f3f5f4; cursor: pointer;
+}
+.command-checklist label:has(input:checked) { background: #e7eaf9; border-color: #6b77b4; }
+.command-checklist input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: #515d9a; }
+.command-checklist small { display: block; }

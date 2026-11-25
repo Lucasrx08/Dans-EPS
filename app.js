@@ -13,6 +13,7 @@ let selectionArea = null;
 const target = $('videoTarget');
 let annotations=[],category=0,mark=0,editing=null,videoURL=null,stream=null,rec=null,chunks=[],timer=null,countTimer=null,cameraToken=0,started=0,view='film',waitingWorker=null,recordGeneration=0,knownDuration=0;
 const player=$('player'),camera=$('camera');
+const commandChecks = Array.from($('commandChecklist').querySelectorAll('input'));
 const say=s=>$('message').textContent=s;
 const time=n=>{n=Math.max(0,Math.floor(Number(n)||0));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0')};
 const length=()=>Number.isFinite(player.duration)&&player.duration>0?player.duration:knownDuration;
@@ -92,7 +93,7 @@ function releaseCamera() {
   $('recordBadge').hidden = true;
   captureControls();
 }
-function clearVideo(){player.pause();player.removeAttribute('src');player.load();if(videoURL)URL.revokeObjectURL(videoURL);videoURL=null;knownDuration=0;annotations=[];$('teacherReport').value='';closeEditor();$('annotationFeedback').textContent='';controls();renderNotes();renderClock()}
+function clearVideo(){player.pause();player.removeAttribute('src');player.load();if(videoURL)URL.revokeObjectURL(videoURL);videoURL=null;knownDuration=0;annotations=[];commandChecks.forEach(check => { check.checked = false; });$('teacherReport').value='';closeEditor();$('annotationFeedback').textContent='';controls();renderNotes();renderClock()}
 function resetSession(){recordGeneration++;if(rec&&rec.state!=='inactive'){try{rec.stop()}catch(_){}}rec=null;chunks=[];releaseCamera();clearVideo();$('file').value='';$('audio').checked=false;captureControls();$('filter').value='';show('film');say('Séance effacée.')}
 $('reset').onclick=()=>{if(confirm('Effacer la vidéo, les repères et le bilan de cette séance ?'))resetSession()};
 $('import').onclick = () => $('file').click();
@@ -146,7 +147,11 @@ $('stop').onclick=()=>{if(rec?.state==='recording'){rec.stop();$('stop').disable
 function seekTo(n){if(videoURL&&Number.isFinite(n)){try{player.currentTime=Math.max(0,Math.min(length()||n,n))}catch(_){say('Recherche indisponible sur ce format.')}}}
 function renderClock(){const d=length();$('now').textContent=time(player.currentTime);$('duration').textContent=time(d);$('seek').max=d||1;$('seek').value=player.currentTime||0;$('cursor').style.left=(d?Math.min(100,player.currentTime/d*100):0)+'%';}
 player.ontimeupdate = renderClock;
-player.ondurationchange = () => { renderClock(); renderNotes(); };
+player.ondurationchange = () => {
+  renderClock();
+  renderNotes();
+  if (view === 'transform') renderCommandDuration();
+};
 player.onloadedmetadata = player.ondurationchange;
 player.onpause = () => { $('play').textContent = '▶ Lecture'; };
 player.onplay = () => {
@@ -363,24 +368,40 @@ function jumpToObservation(observation) {
   seekTo(mark);
 }
 
+function renderCommandDuration() {
+  const duration = length();
+  $('commandDuration').textContent = duration > 0 ? 'Vidéo · ' + time(duration) : '';
+}
+
+$('commandChecklist').onchange = renderReadiness;
+
 function renderReadiness() {
   const positive = annotations.filter(item => item.assessment === 'positive').length;
   const improve = annotations.filter(item => item.assessment === 'improve').length;
-  const total = annotations.length + 2;
-  const positiveShare = (positive + Number(positive > 0)) / total;
-  const improveShare = (improve + Number(improve > 0)) / total;
-  const complete = positive + improve === annotations.length && positive > 0 && improve > 0;
-  const percent = complete ? 100 : Math.floor((positiveShare + improveShare) * 100);
-  $('readinessChart').style.setProperty('--positive', positiveShare + 'turn');
-  $('readinessChart').style.setProperty('--classified', (positiveShare + improveShare) + 'turn');
+  const commandActive = $('level').querySelector(':checked').value === '1';
+  const commandTotal = commandActive ? commandChecks.length : 0;
+  const commandDone = commandActive ? commandChecks.filter(check => check.checked).length : 0;
+  $('commandPanel').hidden = !commandActive;
+  $('commandCount').textContent = commandDone + ' / ' + commandTotal;
+  const total = annotations.length + 2 + commandTotal;
+  const positiveUnits = positive + Number(positive > 0);
+  const classifiedUnits = positiveUnits + improve + Number(improve > 0);
+  const done = classifiedUnits + commandDone;
+  const complete = done === total;
+  const percent = Math.floor(done * 100 / total);
+  $('readinessChart').style.setProperty('--positive', positiveUnits / total + 'turn');
+  $('readinessChart').style.setProperty('--classified', classifiedUnits / total + 'turn');
+  $('readinessChart').style.setProperty('--prepared', done / total + 'turn');
   $('readinessPercent').textContent = percent + ' %';
   $('readinessStatus').textContent = complete ? '100 % · Prêt pour l’évaluation' : percent + ' % · Préparation en cours';
   $('readinessCounts').textContent = positive + ' positifs · ' + improve + ' à améliorer · ' +
-    (annotations.length - positive - improve) + ' à classer';
+    (annotations.length - positive - improve) + ' à classer' +
+    (commandActive ? ' · ' + commandDone + '/' + commandTotal + ' exigences validées' : '');
 }
 
 function renderSummary() {
   renderReadiness();
+  renderCommandDuration();
   const summary = $('summary');
   summary.replaceChildren();
   if (!annotations.length) {
