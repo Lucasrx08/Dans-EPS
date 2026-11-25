@@ -77,12 +77,31 @@ h3 { font-size: 1.06rem; margin: 0; }
 p { margin: 8px 0; }
 .muted { color: var(--muted); font-size: .875rem; }
 .panel { padding: clamp(10px, 1.6vw, 18px); background: var(--surface); border: 1px solid var(--line); border-radius: 14px; min-width: 0; }
-.film-grid, .workspace {
+.film-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 1fr);
   align-items: start;
   gap: clamp(10px, 2vw, 20px);
 }
+.workspace { display: grid; gap: clamp(10px, 2vw, 20px); }
+.video-panel { width: 100%; max-width: 940px; justify-self: center; }
+#tools { width: 100%; max-width: 940px; justify-self: center; }
+.expanded .video-panel, .expanded #tools { max-width: none; }
+.video-box .annotate-trigger {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 10px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: white;
+}
+.annotate-trigger span { padding: 5px 10px; border-radius: 8px; background: #242827e8; font-size: .875rem; }
+.video-box .annotate-trigger:focus-visible { outline-offset: -4px; }
 .capture, .video-box {
   aspect-ratio: 16 / 9;
   max-height: 58vh;
@@ -167,12 +186,10 @@ footer { display: flex; justify-content: center; padding: 8px; }
 .text-button { background: none; border: 0; text-decoration: underline; font-size: .8rem; color: var(--muted); }
 dialog { max-width: 540px; width: calc(100% - 32px); border: 0; border-radius: 16px; padding: 20px; color: var(--ink); }
 dialog::backdrop { background: #0008; }
-.expanded .workspace { grid-template-columns: minmax(0, 1fr); }
 .expanded .video-box { max-height: 72vh; }
-.expanded #tools { display: none; }
 
 @media (max-width: 700px) {
-  .film-grid, .workspace, .summary { grid-template-columns: minmax(0, 1fr); }
+  .film-grid, .summary { grid-template-columns: minmax(0, 1fr); }
   .capture { display: none; }
   .capture.is-active { display: block; }
   nav { max-width: none; margin-block: 8px 14px; }
